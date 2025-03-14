@@ -14,7 +14,7 @@ function App() {
         price: '',
         location: '',
         contactInfo: '',
-        imageUrl: '',
+        imageBase64: '',
     });
 
     // Handle Google login
@@ -57,14 +57,8 @@ function App() {
                 </header>
 
                 <Routes>
-                    <Route
-                        path="/"
-                        element={<HomePage items={items} />}
-                    />
-                    <Route
-                        path="/add-item"
-                        element={<AddItemPage user={user} newItem={newItem} setNewItem={setNewItem} />}
-                    />
+                    <Route path="/" element={<HomePage items={items} />} />
+                    <Route path="/add-item" element={<AddItemPage user={user} newItem={newItem} setNewItem={setNewItem} />} />
                 </Routes>
             </div>
         </Router>
@@ -85,7 +79,7 @@ function HomePage({ items }) {
                         <p><strong>Location: </strong>{item.location}</p>
                         <p><strong>Contact: </strong>{item.contactInfo}</p>
                         <p><strong>Owner: </strong>{item.owner}</p>
-                        {item.imageUrl && <img className="item-image" src={item.imageUrl} alt={item.title} />}
+                        {item.imageBase64 && <img className="item-image" src={item.imageBase64} alt={item.title} />}
                     </div>
                 ))}
             </div>
@@ -102,6 +96,15 @@ function AddItemPage({ user, newItem, setNewItem }) {
         navigate('/');
         return <div className="signin-message">Please log in to add an item.</div>;
     }
+
+    const handleImageUpload = (e) => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => {
+            setNewItem({ ...newItem, imageBase64: reader.result });
+        };
+    };
 
     const handleAddItem = async (e) => {
         e.preventDefault();
@@ -123,8 +126,10 @@ function AddItemPage({ user, newItem, setNewItem }) {
             price: '',
             location: '',
             contactInfo: '',
-            imageUrl: '',
+            imageBase64: '',
         });
+
+        navigate('/');
     };
 
     return (
@@ -168,12 +173,12 @@ function AddItemPage({ user, newItem, setNewItem }) {
                     className="input-field"
                 />
                 <input
-                    type="text"
-                    placeholder="Image URL (optional)"
-                    value={newItem.imageUrl}
-                    onChange={(e) => setNewItem({ ...newItem, imageUrl: e.target.value })}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
                     className="input-field"
                 />
+                {newItem.imageBase64 && <img className="image-preview" src={newItem.imageBase64} alt="Preview" />}
                 <button type="submit" className="submit-btn">Add Item</button>
             </form>
         </div>
