@@ -2,22 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Link, Routes, useNavigate } from 'react-router-dom';
 import { auth, firestore, provider } from './firebase';
 import { signInWithPopup, signOut as firebaseSignOut } from 'firebase/auth';
-import { collection, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 import './App.css';
 
 function App() {
     const [user, setUser] = useState(null);
     const [items, setItems] = useState([]);
-    const [newItem, setNewItem] = useState({
-        title: '',
-        description: '',
-        price: '',
-        location: '',
-        contactInfo: '',
-        imageBase64: '',
-    });
 
-    // Handle Google login
     const signInWithGoogle = async () => {
         const result = await signInWithPopup(auth, provider);
         setUser(result.user);
@@ -28,13 +19,11 @@ function App() {
         setUser(null);
     };
 
-    // Fetch marketplace items
     useEffect(() => {
         const unsubscribe = onSnapshot(collection(firestore, 'items'), (snapshot) => {
             const itemsData = snapshot.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
             setItems(itemsData);
         });
-
         return () => unsubscribe();
     }, []);
 
@@ -48,6 +37,7 @@ function App() {
                     <nav className="header-right">
                         <Link to="/" className="header-nav-link">Home</Link>
                         {user && <Link to="/add-item" className="header-nav-link">Add Item</Link>}
+                        {user && <Link to="/edit-items" className="header-nav-link">Edit Posts</Link>}
                         {user ? (
                             <button className="auth-btn" onClick={signOut}>Sign Out</button>
                         ) : (
@@ -55,17 +45,16 @@ function App() {
                         )}
                     </nav>
                 </header>
-
                 <Routes>
                     <Route path="/" element={<HomePage items={items} />} />
-                    <Route path="/add-item" element={<AddItemPage user={user} newItem={newItem} setNewItem={setNewItem} />} />
+                    <Route path="/add-item" element={<AddItemPage user={user} />} />
+                    <Route path="/edit-items" element={<EditItemsPage user={user} items={items} />} />
                 </Routes>
             </div>
         </Router>
     );
 }
 
-// HomePage Component
 function HomePage({ items }) {
     return (
         <div className="page-container">
@@ -79,7 +68,6 @@ function HomePage({ items }) {
                         <p><strong>Location: </strong>{item.location}</p>
                         <p><strong>Contact: </strong>{item.contactInfo}</p>
                         <p><strong>Owner: </strong>{item.owner}</p>
-                        {item.imageBase64 && <img className="item-image" src={item.imageBase64} alt={item.title} />}
                     </div>
                 ))}
             </div>
@@ -87,48 +75,18 @@ function HomePage({ items }) {
     );
 }
 
-// AddItemPage Component
-function AddItemPage({ user, newItem, setNewItem }) {
+function AddItemPage({ user }) {
     const navigate = useNavigate();
+    const [newItem, setNewItem] = useState({ title: '', description: '', price: '', location: '', contactInfo: '' });
 
-    // Redirect to Home if the user is not logged in
     if (!user) {
         navigate('/');
-        return <div className="signin-message">Please log in to add an item.</div>;
+        return null;
     }
-
-    const handleImageUpload = (e) => {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => {
-            setNewItem({ ...newItem, imageBase64: reader.result });
-        };
-    };
 
     const handleAddItem = async (e) => {
         e.preventDefault();
-        if (!newItem.title || !newItem.description) {
-            alert('Please fill in all required fields.');
-            return;
-        }
-
-        await addDoc(collection(firestore, 'items'), {
-            ...newItem,
-            owner: user.displayName,
-            ownerEmail: user.email,
-            timestamp: serverTimestamp(),
-        });
-
-        setNewItem({
-            title: '',
-            description: '',
-            price: '',
-            location: '',
-            contactInfo: '',
-            imageBase64: '',
-        });
-
+        await addDoc(collection(firestore, 'items'), { ...newItem, owner: user.displayName, ownerEmail: user.email, timestamp: serverTimestamp() });
         navigate('/');
     };
 
@@ -136,51 +94,45 @@ function AddItemPage({ user, newItem, setNewItem }) {
         <div className="page-container">
             <h2 className="page-title">Add a New Item</h2>
             <form className="add-item-form" onSubmit={handleAddItem}>
-                <input
-                    type="text"
-                    placeholder="Title"
-                    value={newItem.title}
-                    onChange={(e) => setNewItem({ ...newItem, title: e.target.value })}
-                    required
-                    className="input-field"
-                />
-                <textarea
-                    placeholder="Description"
-                    value={newItem.description}
-                    onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
-                    required
-                    className="textarea-field"
-                />
-                <input
-                    type="text"
-                    placeholder="Price"
-                    value={newItem.price}
-                    onChange={(e) => setNewItem({ ...newItem, price: e.target.value })}
-                    className="input-field"
-                />
-                <input
-                    type="text"
-                    placeholder="Location"
-                    value={newItem.location}
-                    onChange={(e) => setNewItem({ ...newItem, location: e.target.value })}
-                    className="input-field"
-                />
-                <input
-                    type="text"
-                    placeholder="Contact Info"
-                    value={newItem.contactInfo}
-                    onChange={(e) => setNewItem({ ...newItem, contactInfo: e.target.value })}
-                    className="input-field"
-                />
-                <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="input-field"
-                />
-                {newItem.imageBase64 && <img className="image-preview" src={newItem.imageBase64} alt="Preview" />}
+                <input type="text" placeholder="Title" value={newItem.title} onChange={(e) => setNewItem({ ...newItem, title: e.target.value })} required className="input-field" />
+                <textarea placeholder="Description" value={newItem.description} onChange={(e) => setNewItem({ ...newItem, description: e.target.value })} required className="textarea-field" />
+                <input type="text" placeholder="Price" value={newItem.price} onChange={(e) => setNewItem({ ...newItem, price: e.target.value })} className="input-field" />
+                <input type="text" placeholder="Location" value={newItem.location} onChange={(e) => setNewItem({ ...newItem, location: e.target.value })} className="input-field" />
+                <input type="text" placeholder="Contact Info" value={newItem.contactInfo} onChange={(e) => setNewItem({ ...newItem, contactInfo: e.target.value })} className="input-field" />
                 <button type="submit" className="submit-btn">Add Item</button>
             </form>
+        </div>
+    );
+}
+
+function EditItemsPage({ user, items }) {
+    const navigate = useNavigate();
+
+    if (!user) {
+        navigate('/');
+        return null;
+    }
+
+    const userItems = items.filter(item => item.ownerEmail === user.email);
+
+    const handleUpdate = async (id, updatedData) => {
+        await updateDoc(doc(firestore, 'items', id), updatedData);
+    };
+
+    const handleDelete = async (id) => {
+        await deleteDoc(doc(firestore, 'items', id));
+    };
+
+    return (
+        <div className="page-container">
+            <h2 className="page-title">Edit Your Posts</h2>
+            {userItems.length === 0 ? <p>No posts to edit.</p> : userItems.map((item) => (
+                <div key={item.id} className="edit-item">
+                    <input type="text" defaultValue={item.title} onBlur={(e) => handleUpdate(item.id, { title: e.target.value })} className="input-field" />
+                    <textarea defaultValue={item.description} onBlur={(e) => handleUpdate(item.id, { description: e.target.value })} className="textarea-field" />
+                    <button className="delete-btn" onClick={() => handleDelete(item.id)}>Delete</button>
+                </div>
+            ))}
         </div>
     );
 }
