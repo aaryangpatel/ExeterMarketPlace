@@ -1,23 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Link, Routes, useNavigate } from 'react-router-dom';
 import { auth, firestore, provider } from './firebase';
-import { signInWithPopup, signOut as firebaseSignOut } from 'firebase/auth';
+import { signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut as firebaseSignOut } from 'firebase/auth';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 import './App.css';
 
 function App() {
     const [user, setUser] = useState(null);
     const [items, setItems] = useState([]);
-
-    const signInWithGoogle = async () => {
-        const result = await signInWithPopup(auth, provider);
-        setUser(result.user);
-    };
-
-    const signOut = () => {
-        firebaseSignOut(auth);
-        setUser(null);
-    };
 
     useEffect(() => {
         const unsubscribe = onSnapshot(collection(firestore, 'items'), (snapshot) => {
@@ -39,9 +29,9 @@ function App() {
                         {user && <Link to="/add-item" className="header-nav-link">Add Item</Link>}
                         {user && <Link to="/edit-items" className="header-nav-link">Edit Posts</Link>}
                         {user ? (
-                            <button className="auth-btn" onClick={signOut}>Sign Out</button>
+                            <button className="auth-btn" onClick={() => { firebaseSignOut(auth); setUser(null); }}>Sign Out</button>
                         ) : (
-                            <button className="auth-btn" onClick={signInWithGoogle}>Sign in with Google</button>
+                            <Link to="/auth" className="auth-btn">Sign In</Link>
                         )}
                     </nav>
                 </header>
@@ -49,9 +39,62 @@ function App() {
                     <Route path="/" element={<HomePage items={items} />} />
                     <Route path="/add-item" element={<AddItemPage user={user} />} />
                     <Route path="/edit-items" element={<EditItemsPage user={user} items={items} />} />
+                    <Route path="/auth" element={<AuthPage setUser={setUser} />} />
                 </Routes>
             </div>
         </Router>
+    );
+}
+
+function AuthPage({ setUser }) {
+    const navigate = useNavigate();
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+
+    const signInWithGoogle = async () => {
+        const result = await signInWithPopup(auth, provider);
+        setUser(result.user);
+        navigate('/');
+    };
+
+    const signUpWithEmail = async () => {
+        if (!email || !password) {
+            alert("Please enter both email and password.");
+            return;
+        }
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            setUser(userCredential.user);
+            navigate('/');
+        } catch (error) {
+            alert(error.message);
+        }
+    };
+
+    const signInWithEmail = async () => {
+        if (!email || !password) {
+            alert("Please enter both email and password.");
+            return;
+        }
+        try {
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            setUser(userCredential.user);
+            navigate('/');
+        } catch (error) {
+            alert(error.message);
+        }
+    };
+
+
+    return (
+        <div className="page-container">
+            <h2 className="page-title">Authentication</h2>
+            <button className="auth-btn" onClick={signInWithGoogle}>Sign in with Google</button>
+            <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} className="input-field" />
+            <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} className="input-field" />
+            <button className="auth-btn" onClick={signInWithEmail}>Sign In with Email</button>
+            <button className="auth-btn" onClick={signUpWithEmail}>Sign Up with Email</button>
+        </div>
     );
 }
 
