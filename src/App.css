@@ -90,10 +90,13 @@ header {
 .textarea-field {
   width: 100%;
   padding: 10px;
+  max-width: 500px;
   margin-bottom: 10px;
   border: 1px solid #ddd;
   border-radius: 5px;
+  display: block;
 }
+
 
 .submit-btn {
   background-color: #c8102e;
