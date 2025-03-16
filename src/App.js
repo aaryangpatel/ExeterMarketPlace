@@ -214,15 +214,26 @@ function AddItemPage({ user }) {
 function EditItemsPage({ user, items }) {
     const navigate = useNavigate();
 
+    // Always call useState hooks at the top level, regardless of any conditions
+    const [editedItem, setEditedItem] = useState(null);
+
+    // Conditionally return early, but do not call hooks conditionally
     if (!user) {
         navigate('/');
-        return null;
+        return null;  // Returning null when the user is not logged in
     }
 
     const userItems = items.filter(item => item.ownerEmail === user.email);
 
-    const handleUpdate = async (id, updatedData) => {
-        await updateDoc(doc(firestore, 'items', id), updatedData);
+    const handleInputChange = (e, field) => {
+        setEditedItem({ ...editedItem, [field]: e.target.value });
+    };
+
+    const handleUpdate = async (id) => {
+        if (editedItem) {
+            await updateDoc(doc(firestore, 'items', id), { ...editedItem });
+            setEditedItem(null);  // Reset edited item after update
+        }
     };
 
     const handleDelete = async (id) => {
@@ -233,15 +244,48 @@ function EditItemsPage({ user, items }) {
         <div className="page-container">
             <h2 className="page-title">Edit Your Posts</h2>
             {userItems.length === 0 ? <p>No posts to edit.</p> : userItems.map((item) => (
-                <div key={item.id} className="edit-item">
-                    <input type="text" defaultValue={item.title} onBlur={(e) => handleUpdate(item.id, { title: e.target.value })} className="input-field" />
-                    <textarea defaultValue={item.description} onBlur={(e) => handleUpdate(item.id, { description: e.target.value })} className="textarea-field" />
-                    <button className="delete-btn" onClick={() => handleDelete(item.id)}>Delete</button>
+                <div key={item.id} className="item-details">
+                    <h3 className="item-title">{item.title}</h3>
+                    <input
+                        type="text"
+                        defaultValue={item.title}
+                        onChange={(e) => handleInputChange(e, 'title')}
+                        className="input-field"
+                    />
+                    <textarea
+                        defaultValue={item.description}
+                        onChange={(e) => handleInputChange(e, 'description')}
+                        className="textarea-field"
+                    />
+                    <input
+                        type="text"
+                        defaultValue={item.price || 'Free'}
+                        onChange={(e) => handleInputChange(e, 'price')}
+                        className="input-field"
+                    />
+                    <input
+                        type="text"
+                        defaultValue={item.location}
+                        onChange={(e) => handleInputChange(e, 'location')}
+                        className="input-field"
+                    />
+                    <input
+                        type="text"
+                        defaultValue={item.contactInfo}
+                        onChange={(e) => handleInputChange(e, 'contactInfo')}
+                        className="input-field"
+                    />
+                    {item.imageBase64 && <img className="item-image" src={item.imageBase64} alt={item.title} />}
+                    <div className="item-buttons">
+                        <button className="update-btn" onClick={() => handleUpdate(item.id)}>Update</button>
+                        <button className="delete-btn" onClick={() => handleDelete(item.id)}>Delete</button>
+                    </div>
                 </div>
             ))}
         </div>
     );
 }
+
 
 function HomePage({ items }) {
     return (
