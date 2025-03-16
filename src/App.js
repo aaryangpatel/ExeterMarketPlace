@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Link, Routes, useNavigate } from 'react-router-dom';
 import { auth, firestore, provider } from './firebase';
-import { signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut as firebaseSignOut } from 'firebase/auth';
-import { collection, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
+import { signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut as firebaseSignOut, updateProfile } from 'firebase/auth';
+import { collection, onSnapshot, addDoc, updateDoc, doc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import './App.css';
-import { updateProfile } from 'firebase/auth';
 
 function App() {
     const [user, setUser] = useState(null);
@@ -28,6 +27,7 @@ function App() {
                     <nav className="header-right">
                         <Link to="/" className="header-nav-link">Home</Link>
                         {user && <Link to="/add-item" className="header-nav-link">Add Item</Link>}
+                        {user && <Link to="/edit-items" className="header-nav-link">Edit Posts</Link>}
                         {user ? (
                             <button className="auth-btn" onClick={() => { firebaseSignOut(auth); setUser(null); }}>Sign Out</button>
                         ) : (
@@ -41,6 +41,7 @@ function App() {
                 <Routes>
                     <Route path="/" element={<HomePage items={items} />} />
                     <Route path="/add-item" element={<AddItemPage user={user} />} />
+                    <Route path="/edit-items" element={<EditItemsPage user={user} items={items} />} />
                     <Route path="/auth/signup" element={<AuthPage setUser={setUser} type="signup" />} />
                     <Route path="/auth/signin" element={<AuthPage setUser={setUser} type="signin" />} />
                 </Routes>
@@ -74,7 +75,6 @@ function AuthPage({ setUser, type }) {
             alert(error.message);
         }
     };
-
 
     const signInWithEmail = async () => {
         try {
@@ -207,6 +207,38 @@ function AddItemPage({ user }) {
                 {newItem.imageBase64 && <img className="image-preview" src={newItem.imageBase64} alt="Preview" />}
                 <button type="submit" className="submit-btn">Add Item</button>
             </form>
+        </div>
+    );
+}
+
+function EditItemsPage({ user, items }) {
+    const navigate = useNavigate();
+
+    if (!user) {
+        navigate('/');
+        return null;
+    }
+
+    const userItems = items.filter(item => item.ownerEmail === user.email);
+
+    const handleUpdate = async (id, updatedData) => {
+        await updateDoc(doc(firestore, 'items', id), updatedData);
+    };
+
+    const handleDelete = async (id) => {
+        await deleteDoc(doc(firestore, 'items', id));
+    };
+
+    return (
+        <div className="page-container">
+            <h2 className="page-title">Edit Your Posts</h2>
+            {userItems.length === 0 ? <p>No posts to edit.</p> : userItems.map((item) => (
+                <div key={item.id} className="edit-item">
+                    <input type="text" defaultValue={item.title} onBlur={(e) => handleUpdate(item.id, { title: e.target.value })} className="input-field" />
+                    <textarea defaultValue={item.description} onBlur={(e) => handleUpdate(item.id, { description: e.target.value })} className="textarea-field" />
+                    <button className="delete-btn" onClick={() => handleDelete(item.id)}>Delete</button>
+                </div>
+            ))}
         </div>
     );
 }
