@@ -22,7 +22,7 @@ function App() {
             <div className="App">
                 <header>
                     <div className="header-left">
-                        <h1 className="header-title">Phillips Exeter Academy Marketplace</h1>
+                        <h1 className="header-title">Exeter Marketplace</h1>
                     </div>
                     <nav className="header-right">
                         <Link to="/" className="header-nav-link">Home</Link>
@@ -246,7 +246,7 @@ function EditItemsPage({ user, items }) {
 function HomePage({ items }) {
     return (
         <div className="page-container">
-            <h2 className="page-title">Marketplace Items</h2>
+            <h2 className="page-title">Available Items</h2>
             <div className="item-list">
                 {items.map((item) => (
                     <div key={item.id} className="item">
