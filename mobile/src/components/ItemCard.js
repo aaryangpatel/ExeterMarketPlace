@@ -1,152 +1,237 @@
 /**
- * ItemCard - Professional marketplace card design.
+ * ItemCard - Premium marketplace card design
+ * Features clean layout, subtle shadows, and smooth interactions
  */
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Pressable } from 'react-native';
 import { Image } from 'expo-image';
-import { COLORS, SPACING, RADIUS, FONT_SIZES, SHADOWS } from '../theme/constants';
+import { COLORS, SPACING, RADIUS, FONT_SIZES, FONT_WEIGHTS, SHADOWS } from '../theme/constants';
 
 export default function ItemCard({ item, onPress, onMessagePress, isFavorite, onFavoritePress }) {
   const isSold = item.status === 'sold';
+  const isFree = !item.price || item.price.toLowerCase() === 'free';
+
+  const formatPrice = (price) => {
+    if (!price || price.toLowerCase() === 'free') return 'Free';
+    if (price.startsWith('$')) return price;
+    return `$${price}`;
+  };
 
   return (
-    <TouchableOpacity
-      style={styles.card}
+    <Pressable
+      style={({ pressed }) => [
+        styles.card,
+        pressed && styles.cardPressed,
+      ]}
       onPress={() => onPress?.(item)}
-      activeOpacity={0.9}
     >
-      {item.imageBase64 ? (
-        <Image
-          source={{ uri: item.imageBase64 }}
-          style={styles.image}
-          contentFit="cover"
-          recyclingKey={item.id}
-        />
-      ) : (
-        <View style={styles.imagePlaceholder}>
-          <Text style={styles.placeholderText}>No image</Text>
-        </View>
-      )}
-      {isSold && (
-        <View style={styles.soldBadge}>
-          <Text style={styles.soldBadgeText}>SOLD</Text>
-        </View>
-      )}
-      <View style={styles.content}>
-        <View style={styles.titleRow}>
-          <Text style={styles.title} numberOfLines={2}>
-            {item.title}
-          </Text>
-          {onFavoritePress && (
-            <TouchableOpacity
-              onPress={() => onFavoritePress(item)}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              style={styles.favBtn}
-            >
-              <Text style={styles.favIcon}>{isFavorite ? '❤️' : '🤍'}</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-        <Text style={styles.price}>{item.price || 'Free'}</Text>
-        {item.location ? (
-          <Text style={styles.location} numberOfLines={1}>
-            {item.location}
-          </Text>
-        ) : null}
-        {onMessagePress && !isSold && (
+      {/* Image Container */}
+      <View style={styles.imageContainer}>
+        {item.imageBase64 ? (
+          <Image
+            source={{ uri: item.imageBase64 }}
+            style={styles.image}
+            contentFit="cover"
+            recyclingKey={item.id}
+            transition={200}
+          />
+        ) : (
+          <View style={styles.imagePlaceholder}>
+            <View style={styles.placeholderIcon}>
+              <Text style={styles.placeholderIconText}>IMG</Text>
+            </View>
+            <Text style={styles.placeholderText}>No image</Text>
+          </View>
+        )}
+        
+        {/* Sold Badge */}
+        {isSold && (
+          <View style={styles.soldBadge}>
+            <Text style={styles.soldBadgeText}>SOLD</Text>
+          </View>
+        )}
+
+        {/* Favorite Button */}
+        {onFavoritePress && (
           <TouchableOpacity
-            style={styles.messageBtn}
-            onPress={() => onMessagePress(item)}
-            activeOpacity={0.85}
+            onPress={() => onFavoritePress(item)}
+            style={styles.favoriteButton}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            activeOpacity={0.7}
           >
-            <Text style={styles.messageBtnText}>Message Seller</Text>
+            <View style={[styles.favoriteCircle, isFavorite && styles.favoriteCircleActive]}>
+              <Text style={styles.favoriteIcon}>{isFavorite ? '\u2665' : '\u2661'}</Text>
+            </View>
           </TouchableOpacity>
         )}
       </View>
-    </TouchableOpacity>
+
+      {/* Content */}
+      <View style={styles.content}>
+        {/* Title */}
+        <Text style={styles.title} numberOfLines={2}>
+          {item.title}
+        </Text>
+
+        {/* Price */}
+        <Text style={[styles.price, isFree && styles.priceFree, isSold && styles.priceSold]}>
+          {isSold ? 'Sold' : formatPrice(item.price)}
+        </Text>
+
+        {/* Location */}
+        {item.location ? (
+          <View style={styles.locationRow}>
+            <Text style={styles.locationIcon}>&#x1F4CD;</Text>
+            <Text style={styles.location} numberOfLines={1}>
+              {item.location}
+            </Text>
+          </View>
+        ) : null}
+
+        {/* Message Button */}
+        {onMessagePress && !isSold && (
+          <TouchableOpacity
+            style={styles.messageButton}
+            onPress={() => onMessagePress(item)}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.messageButtonText}>Message Seller</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    position: 'relative',
     backgroundColor: COLORS.surface,
     borderRadius: RADIUS.lg,
     overflow: 'hidden',
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.lg,
     ...SHADOWS.md,
+  },
+  cardPressed: {
+    opacity: 0.95,
+    transform: [{ scale: 0.99 }],
+  },
+  imageContainer: {
+    position: 'relative',
+    backgroundColor: COLORS.backgroundSecondary,
   },
   image: {
     width: '100%',
     height: 200,
-    backgroundColor: COLORS.borderLight,
   },
   imagePlaceholder: {
     width: '100%',
     height: 200,
-    backgroundColor: COLORS.borderLight,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: COLORS.backgroundSecondary,
+  },
+  placeholderIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.sm,
+  },
+  placeholderIconText: {
+    fontSize: FONT_SIZES.xs,
+    fontWeight: FONT_WEIGHTS.semibold,
+    color: COLORS.textTertiary,
+  },
+  placeholderText: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textTertiary,
   },
   soldBadge: {
     position: 'absolute',
-    top: SPACING.sm,
-    right: SPACING.sm,
-    backgroundColor: COLORS.text,
+    top: SPACING.md,
+    left: SPACING.md,
+    backgroundColor: COLORS.soldBadge,
     paddingVertical: SPACING.xs,
     paddingHorizontal: SPACING.sm,
-    borderRadius: RADIUS.sm,
+    borderRadius: RADIUS.xs,
   },
   soldBadgeText: {
-    color: COLORS.surface,
-    fontSize: FONT_SIZES.xs,
-    fontWeight: '800',
+    color: COLORS.textInverse,
+    fontSize: FONT_SIZES.xxs,
+    fontWeight: FONT_WEIGHTS.heavy,
     letterSpacing: 0.5,
   },
-  placeholderText: {
-    color: COLORS.textMuted,
-    fontSize: FONT_SIZES.sm,
+  favoriteButton: {
+    position: 'absolute',
+    top: SPACING.md,
+    right: SPACING.md,
+  },
+  favoriteCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...SHADOWS.sm,
+  },
+  favoriteCircleActive: {
+    backgroundColor: COLORS.primaryMuted,
+  },
+  favoriteIcon: {
+    fontSize: 18,
+    color: COLORS.primary,
   },
   content: {
-    padding: SPACING.md,
+    padding: SPACING.lg,
   },
-  titleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: SPACING.xs,
-  },
-  favBtn: { padding: SPACING.xs },
-  favIcon: { fontSize: 22 },
   title: {
-    flex: 1,
     fontSize: FONT_SIZES.lg,
-    fontWeight: '700',
+    fontWeight: FONT_WEIGHTS.semibold,
     color: COLORS.text,
-    marginRight: SPACING.sm,
+    lineHeight: FONT_SIZES.lg * 1.3,
+    marginBottom: SPACING.xs,
   },
   price: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: '700',
-    color: COLORS.primary,
-    marginBottom: SPACING.xs,
-  },
-  location: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
+    fontSize: FONT_SIZES.xl,
+    fontWeight: FONT_WEIGHTS.bold,
+    color: COLORS.priceGreen,
     marginBottom: SPACING.sm,
   },
-  messageBtn: {
+  priceFree: {
+    color: COLORS.priceFree,
+  },
+  priceSold: {
+    color: COLORS.sold,
+    textDecorationLine: 'line-through',
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
+  locationIcon: {
+    fontSize: FONT_SIZES.sm,
+    marginRight: SPACING.xs,
+  },
+  location: {
+    flex: 1,
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+  },
+  messageButton: {
     backgroundColor: COLORS.primary,
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
     borderRadius: RADIUS.md,
-    alignSelf: 'flex-start',
+    alignItems: 'center',
     marginTop: SPACING.xs,
   },
-  messageBtnText: {
-    color: COLORS.surface,
-    fontSize: FONT_SIZES.sm,
-    fontWeight: '700',
+  messageButtonText: {
+    color: COLORS.textInverse,
+    fontSize: FONT_SIZES.md,
+    fontWeight: FONT_WEIGHTS.semibold,
   },
 });

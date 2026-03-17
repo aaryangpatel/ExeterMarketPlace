@@ -1,5 +1,6 @@
 /**
- * EditItemsScreen - My Listings dashboard. Manage or delete posts.
+ * EditItemsScreen - Premium listings management
+ * Features clean card design, inline editing, and smooth interactions
  */
 import React, { useState, useEffect } from 'react';
 import {
@@ -12,6 +13,7 @@ import {
   Alert,
   RefreshControl,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
@@ -19,49 +21,60 @@ import * as FileSystem from 'expo-file-system';
 import { updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { firestore } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
-import { COLORS, SPACING, RADIUS, FONT_SIZES } from '../theme/constants';
+import { COLORS, SPACING, RADIUS, FONT_SIZES, FONT_WEIGHTS, SHADOWS } from '../theme/constants';
 
 export default function EditItemsScreen({ route, navigation }) {
   const { items } = route.params ?? { items: [] };
   const { user } = useAuth();
+  
   useEffect(() => {
     if (!user) navigation.replace('SignIn');
   }, [user, navigation]);
+  
   if (!user) return null;
+
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [refreshing, setRefreshing] = useState(false);
+  const [savingId, setSavingId] = useState(null);
 
   const userItems = items.filter((i) => i.ownerEmail === user?.email);
 
-  const handleUpdate = (id) => {
+  const handleUpdate = async (id) => {
     const data = editForm[id];
     if (!data) return;
-    updateDoc(doc(firestore, 'items', id), data)
-      .then(() => {
-        setEditingId(null);
-        setEditForm((prev) => {
-          const next = { ...prev };
-          delete next[id];
-          return next;
-        });
-      })
-      .catch((err) => Alert.alert('Error', err.message ?? 'Update failed'));
+    
+    setSavingId(id);
+    try {
+      await updateDoc(doc(firestore, 'items', id), data);
+      setEditingId(null);
+      setEditForm((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+    } catch (err) {
+      Alert.alert('Error', 'Failed to update item. Please try again.');
+    }
+    setSavingId(null);
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = (id, title) => {
     Alert.alert(
-      'Delete item',
-      'Are you sure you want to delete this listing?',
+      'Delete Listing',
+      `Are you sure you want to delete "${title}"? This action cannot be undone.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => {
-            deleteDoc(doc(firestore, 'items', id))
-              .then(() => setEditingId(null))
-              .catch((err) => Alert.alert('Error', err.message ?? 'Delete failed'));
+          onPress: async () => {
+            try {
+              await deleteDoc(doc(firestore, 'items', id));
+              setEditingId(null);
+            } catch (err) {
+              Alert.alert('Error', 'Failed to delete item. Please try again.');
+            }
           },
         },
       ]
@@ -75,17 +88,20 @@ export default function EditItemsScreen({ route, navigation }) {
     }));
   };
 
-  const handleMarkSold = (id) => {
+  const handleMarkSold = (id, title) => {
     Alert.alert(
-      'Mark as sold',
-      'Mark this item as sold? It will be hidden from the main feed unless users enable "Show sold".',
+      'Mark as Sold',
+      `Mark "${title}" as sold? It will be hidden from the main feed.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Mark Sold',
-          onPress: () => {
-            updateDoc(doc(firestore, 'items', id), { status: 'sold' })
-              .catch((err) => Alert.alert('Error', err.message ?? 'Update failed'));
+          onPress: async () => {
+            try {
+              await updateDoc(doc(firestore, 'items', id), { status: 'sold' });
+            } catch (err) {
+              Alert.alert('Error', 'Failed to update item. Please try again.');
+            }
           },
         },
       ]
@@ -99,9 +115,12 @@ export default function EditItemsScreen({ route, navigation }) {
       aspect: [4, 3],
       quality: 0.8,
     });
+    
     if (result.canceled) return;
+    
     const uri = result.assets[0].uri;
     let base64 = uri;
+    
     if (!uri.startsWith('data:')) {
       if (Platform.OS === 'web') {
         const res = await fetch(uri);
@@ -123,49 +142,91 @@ export default function EditItemsScreen({ route, navigation }) {
 
   const renderItem = ({ item }) => {
     const isEditing = editingId === item.id;
-    const form = editForm[item.id] ?? {};
+    const isSaving = savingId === item.id;
+    const isSold = item.status === 'sold';
 
     return (
       <View style={styles.card}>
-        {item.imageBase64 ? (
-          <ExpoImage source={{ uri: item.imageBase64 }} style={styles.thumb} contentFit="cover" />
-        ) : (
-          <View style={[styles.thumb, styles.thumbPlaceholder]}>
-            <Text style={styles.placeholderText}>No image</Text>
-          </View>
-        )}
-        <View style={styles.cardBody}>
+        {/* Image */}
+        <View style={styles.imageContainer}>
+          {item.imageBase64 ? (
+            <ExpoImage 
+              source={{ uri: editForm[item.id]?.imageBase64 || item.imageBase64 }} 
+              style={styles.image} 
+              contentFit="cover" 
+            />
+          ) : (
+            <View style={styles.imagePlaceholder}>
+              <Text style={styles.placeholderText}>No image</Text>
+            </View>
+          )}
+          {isSold && (
+            <View style={styles.soldBadge}>
+              <Text style={styles.soldBadgeText}>SOLD</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Content */}
+        <View style={styles.cardContent}>
           {isEditing ? (
             <>
-              <TouchableOpacity style={styles.imageChangeBtn} onPress={() => handleChangeImage(item.id)}>
-                <Text style={styles.imageChangeBtnText}>Change photo</Text>
+              <TouchableOpacity 
+                style={styles.changeImageBtn} 
+                onPress={() => handleChangeImage(item.id)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.changeImageBtnText}>Change Photo</Text>
               </TouchableOpacity>
-              <TextInput
-                style={styles.input}
-                defaultValue={item.title}
-                onChangeText={(v) => handleInputChange(item.id, 'title', v)}
-                placeholder="Title"
-              />
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                defaultValue={item.description}
-                onChangeText={(v) => handleInputChange(item.id, 'description', v)}
-                placeholder="Description"
-                multiline
-              />
-              <TextInput
-                style={styles.input}
-                defaultValue={item.price || 'Free'}
-                onChangeText={(v) => handleInputChange(item.id, 'price', v)}
-                placeholder="Price"
-              />
-              <TextInput
-                style={styles.input}
-                defaultValue={item.location}
-                onChangeText={(v) => handleInputChange(item.id, 'location', v)}
-                placeholder="Location"
-              />
-              <View style={styles.row}>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Title</Text>
+                <TextInput
+                  style={styles.input}
+                  defaultValue={item.title}
+                  onChangeText={(v) => handleInputChange(item.id, 'title', v)}
+                  placeholder="Title"
+                  placeholderTextColor={COLORS.textTertiary}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Description</Text>
+                <TextInput
+                  style={[styles.input, styles.textArea]}
+                  defaultValue={item.description}
+                  onChangeText={(v) => handleInputChange(item.id, 'description', v)}
+                  placeholder="Description"
+                  placeholderTextColor={COLORS.textTertiary}
+                  multiline
+                  textAlignVertical="top"
+                />
+              </View>
+
+              <View style={styles.inputRow}>
+                <View style={[styles.inputGroup, { flex: 1 }]}>
+                  <Text style={styles.inputLabel}>Price</Text>
+                  <TextInput
+                    style={styles.input}
+                    defaultValue={item.price || 'Free'}
+                    onChangeText={(v) => handleInputChange(item.id, 'price', v)}
+                    placeholder="Price"
+                    placeholderTextColor={COLORS.textTertiary}
+                  />
+                </View>
+                <View style={[styles.inputGroup, { flex: 1, marginLeft: SPACING.md }]}>
+                  <Text style={styles.inputLabel}>Location</Text>
+                  <TextInput
+                    style={styles.input}
+                    defaultValue={item.location}
+                    onChangeText={(v) => handleInputChange(item.id, 'location', v)}
+                    placeholder="Location"
+                    placeholderTextColor={COLORS.textTertiary}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.editActions}>
                 <TouchableOpacity
                   style={styles.cancelBtn}
                   onPress={() => {
@@ -176,44 +237,55 @@ export default function EditItemsScreen({ route, navigation }) {
                       return next;
                     });
                   }}
+                  activeOpacity={0.8}
                 >
                   <Text style={styles.cancelBtnText}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={styles.updateBtn}
+                  style={[styles.saveBtn, isSaving && styles.saveBtnDisabled]}
                   onPress={() => handleUpdate(item.id)}
+                  disabled={isSaving}
+                  activeOpacity={0.8}
                 >
-                  <Text style={styles.updateBtnText}>Save</Text>
+                  {isSaving ? (
+                    <ActivityIndicator color={COLORS.textInverse} size="small" />
+                  ) : (
+                    <Text style={styles.saveBtnText}>Save Changes</Text>
+                  )}
                 </TouchableOpacity>
               </View>
             </>
           ) : (
             <>
-              <Text style={styles.rowTitle}>{item.title}</Text>
-              <Text style={styles.rowPrice}>{item.price || 'Free'}</Text>
-              {(item.status === 'sold') && (
-                <View style={styles.soldTag}>
-                  <Text style={styles.soldTagText}>SOLD</Text>
-                </View>
+              <Text style={styles.itemTitle}>{item.title}</Text>
+              <Text style={[styles.itemPrice, isSold && styles.itemPriceSold]}>
+                {isSold ? 'Sold' : item.price || 'Free'}
+              </Text>
+              {item.location && (
+                <Text style={styles.itemLocation}>{item.location}</Text>
               )}
-              <View style={styles.row}>
+
+              <View style={styles.itemActions}>
                 <TouchableOpacity
                   style={styles.editBtn}
                   onPress={() => setEditingId(item.id)}
+                  activeOpacity={0.8}
                 >
                   <Text style={styles.editBtnText}>Edit</Text>
                 </TouchableOpacity>
-                {item.status !== 'sold' && (
+                {!isSold && (
                   <TouchableOpacity
                     style={styles.soldBtn}
-                    onPress={() => handleMarkSold(item.id)}
+                    onPress={() => handleMarkSold(item.id, item.title)}
+                    activeOpacity={0.8}
                   >
                     <Text style={styles.soldBtnText}>Mark Sold</Text>
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity
                   style={styles.deleteBtn}
-                  onPress={() => handleDelete(item.id)}
+                  onPress={() => handleDelete(item.id, item.title)}
+                  activeOpacity={0.8}
                 >
                   <Text style={styles.deleteBtnText}>Delete</Text>
                 </TouchableOpacity>
@@ -229,13 +301,19 @@ export default function EditItemsScreen({ route, navigation }) {
     <View style={styles.container}>
       {userItems.length === 0 ? (
         <View style={styles.empty}>
-          <Text style={styles.emptyText}>No listings yet</Text>
-          <Text style={styles.emptySubtext}>Post an item to get started</Text>
+          <View style={styles.emptyIconContainer}>
+            <Text style={styles.emptyIcon}>&#x1F4E6;</Text>
+          </View>
+          <Text style={styles.emptyTitle}>No listings yet</Text>
+          <Text style={styles.emptySubtitle}>
+            Post your first item to start selling
+          </Text>
           <TouchableOpacity
-            style={styles.addBtn}
+            style={styles.emptyBtn}
             onPress={() => navigation.navigate('AddItem')}
+            activeOpacity={0.8}
           >
-            <Text style={styles.addBtnText}>Post an Item</Text>
+            <Text style={styles.emptyBtnText}>Post an Item</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -244,6 +322,7 @@ export default function EditItemsScreen({ route, navigation }) {
           keyExtractor={(i) => i.id}
           renderItem={renderItem}
           contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -261,113 +340,242 @@ export default function EditItemsScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  list: { padding: SPACING.md },
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  list: {
+    padding: SPACING.lg,
+    paddingBottom: SPACING.huge,
+  },
+
+  // Empty State
   empty: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: SPACING.xl,
+    padding: SPACING.xxl,
   },
-  emptyText: {
+  emptyIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: COLORS.primaryMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.xl,
+  },
+  emptyIcon: {
+    fontSize: 36,
+  },
+  emptyTitle: {
     fontSize: FONT_SIZES.xl,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
+    fontWeight: FONT_WEIGHTS.semibold,
+    color: COLORS.text,
     marginBottom: SPACING.sm,
   },
-  emptySubtext: { fontSize: FONT_SIZES.md, color: COLORS.textSecondary, marginBottom: SPACING.lg },
-  addBtn: {
-    backgroundColor: COLORS.primary,
-    padding: SPACING.md,
-    borderRadius: RADIUS.md,
+  emptySubtitle: {
+    fontSize: FONT_SIZES.md,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginBottom: SPACING.xl,
   },
-  addBtnText: { color: COLORS.surface, fontWeight: '600' },
+  emptyBtn: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: SPACING.lg,
+    paddingHorizontal: SPACING.xxl,
+    borderRadius: RADIUS.md,
+    ...SHADOWS.sm,
+  },
+  emptyBtnText: {
+    color: COLORS.textInverse,
+    fontSize: FONT_SIZES.md,
+    fontWeight: FONT_WEIGHTS.semibold,
+  },
+
+  // Card
   card: {
     backgroundColor: COLORS.surface,
     borderRadius: RADIUS.lg,
     overflow: 'hidden',
-    marginBottom: SPACING.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
+    marginBottom: SPACING.lg,
+    ...SHADOWS.md,
   },
-  thumb: { width: '100%', height: 160, backgroundColor: COLORS.border },
-  thumbPlaceholder: { alignItems: 'center', justifyContent: 'center' },
-  placeholderText: { color: COLORS.textSecondary, fontSize: FONT_SIZES.sm },
-  cardBody: { padding: SPACING.md },
-  rowTitle: { fontSize: FONT_SIZES.lg, fontWeight: '600', color: COLORS.text },
-  rowPrice: { fontSize: FONT_SIZES.md, color: COLORS.primary, marginTop: SPACING.xs },
+  imageContainer: {
+    position: 'relative',
+  },
+  image: {
+    width: '100%',
+    height: 180,
+  },
+  imagePlaceholder: {
+    width: '100%',
+    height: 180,
+    backgroundColor: COLORS.backgroundSecondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  placeholderText: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textTertiary,
+  },
+  soldBadge: {
+    position: 'absolute',
+    top: SPACING.md,
+    left: SPACING.md,
+    backgroundColor: COLORS.soldBadge,
+    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.sm,
+    borderRadius: RADIUS.xs,
+  },
+  soldBadgeText: {
+    color: COLORS.textInverse,
+    fontSize: FONT_SIZES.xxs,
+    fontWeight: FONT_WEIGHTS.heavy,
+    letterSpacing: 0.5,
+  },
+  cardContent: {
+    padding: SPACING.lg,
+  },
+
+  // Item Display
+  itemTitle: {
+    fontSize: FONT_SIZES.lg,
+    fontWeight: FONT_WEIGHTS.semibold,
+    color: COLORS.text,
+    marginBottom: SPACING.xs,
+  },
+  itemPrice: {
+    fontSize: FONT_SIZES.xl,
+    fontWeight: FONT_WEIGHTS.bold,
+    color: COLORS.priceGreen,
+    marginBottom: SPACING.xs,
+  },
+  itemPriceSold: {
+    color: COLORS.sold,
+    textDecorationLine: 'line-through',
+  },
+  itemLocation: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.md,
+  },
+
+  // Item Actions
+  itemActions: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+    marginTop: SPACING.md,
+  },
+  editBtn: {
+    flex: 1,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+  },
+  editBtnText: {
+    color: COLORS.textInverse,
+    fontSize: FONT_SIZES.sm,
+    fontWeight: FONT_WEIGHTS.semibold,
+  },
+  soldBtn: {
+    flex: 1,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.backgroundSecondary,
+    alignItems: 'center',
+  },
+  soldBtnText: {
+    color: COLORS.text,
+    fontSize: FONT_SIZES.sm,
+    fontWeight: FONT_WEIGHTS.semibold,
+  },
+  deleteBtn: {
+    flex: 1,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.errorLight,
+    alignItems: 'center',
+  },
+  deleteBtnText: {
+    color: COLORS.error,
+    fontSize: FONT_SIZES.sm,
+    fontWeight: FONT_WEIGHTS.semibold,
+  },
+
+  // Edit Form
+  changeImageBtn: {
+    backgroundColor: COLORS.primaryMuted,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.md,
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+  },
+  changeImageBtnText: {
+    color: COLORS.primary,
+    fontSize: FONT_SIZES.sm,
+    fontWeight: FONT_WEIGHTS.semibold,
+  },
+  inputGroup: {
+    marginBottom: SPACING.md,
+  },
+  inputLabel: {
+    fontSize: FONT_SIZES.xs,
+    fontWeight: FONT_WEIGHTS.semibold,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.xs,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   input: {
     backgroundColor: COLORS.background,
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: RADIUS.sm,
-    padding: SPACING.sm,
     paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.md,
     fontSize: FONT_SIZES.md,
     color: COLORS.text,
-    marginBottom: SPACING.sm,
   },
-  textArea: { minHeight: 80, textAlignVertical: 'top' },
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginTop: SPACING.md },
-  imageChangeBtn: {
-    backgroundColor: COLORS.background,
-    padding: SPACING.sm,
-    borderRadius: RADIUS.sm,
-    marginBottom: SPACING.sm,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+  textArea: {
+    minHeight: 80,
   },
-  imageChangeBtnText: { color: COLORS.primary, fontWeight: '600', textAlign: 'center' },
-  soldTag: {
-    alignSelf: 'flex-start',
-    backgroundColor: COLORS.text,
-    paddingVertical: SPACING.xs,
-    paddingHorizontal: SPACING.sm,
-    borderRadius: RADIUS.sm,
-    marginTop: SPACING.sm,
+  inputRow: {
+    flexDirection: 'row',
   },
-  soldTagText: { color: COLORS.surface, fontSize: 12, fontWeight: '700' },
-  soldBtn: {
-    flex: 1,
-    padding: SPACING.sm,
-    borderRadius: RADIUS.sm,
-    backgroundColor: COLORS.textSecondary,
-    alignItems: 'center',
+  editActions: {
+    flexDirection: 'row',
+    gap: SPACING.md,
+    marginTop: SPACING.md,
   },
-  soldBtnText: { color: COLORS.surface, fontWeight: '600' },
-  editBtn: {
-    flex: 1,
-    padding: SPACING.sm,
-    borderRadius: RADIUS.sm,
-    backgroundColor: COLORS.primary,
-    alignItems: 'center',
-  },
-  editBtnText: { color: COLORS.surface, fontWeight: '600' },
-  deleteBtn: {
-    flex: 1,
-    padding: SPACING.sm,
-    borderRadius: RADIUS.sm,
-    backgroundColor: COLORS.error,
-    alignItems: 'center',
-  },
-  deleteBtnText: { color: COLORS.surface, fontWeight: '600' },
   cancelBtn: {
     flex: 1,
-    padding: SPACING.sm,
-    borderRadius: RADIUS.sm,
-    backgroundColor: COLORS.border,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.backgroundSecondary,
     alignItems: 'center',
   },
-  cancelBtnText: { color: COLORS.text, fontWeight: '600' },
-  updateBtn: {
-    flex: 1,
-    padding: SPACING.sm,
-    borderRadius: RADIUS.sm,
+  cancelBtnText: {
+    color: COLORS.text,
+    fontSize: FONT_SIZES.sm,
+    fontWeight: FONT_WEIGHTS.semibold,
+  },
+  saveBtn: {
+    flex: 2,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.md,
     backgroundColor: COLORS.primary,
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
   },
-  updateBtnText: { color: COLORS.surface, fontWeight: '600' },
+  saveBtnDisabled: {
+    opacity: 0.7,
+  },
+  saveBtnText: {
+    color: COLORS.textInverse,
+    fontSize: FONT_SIZES.sm,
+    fontWeight: FONT_WEIGHTS.semibold,
+  },
 });

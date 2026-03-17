@@ -1,6 +1,6 @@
 /**
- * AddItemScreen - Multi-step Post an Item flow.
- * Step 1: Image Upload → Step 2: Details → Step 3: Category
+ * AddItemScreen - Premium multi-step posting flow
+ * Features progress indicator, clean forms, and polished interactions
  */
 import React, { useState, useEffect } from 'react';
 import {
@@ -12,22 +12,33 @@ import {
   StyleSheet,
   Alert,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
+import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { firestore } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
-import { COLORS, SPACING, RADIUS, FONT_SIZES } from '../theme/constants';
+import { COLORS, SPACING, RADIUS, FONT_SIZES, FONT_WEIGHTS, SHADOWS } from '../theme/constants';
 
 const CATEGORIES = ['Electronics', 'Clothing', 'Books', 'Furniture', 'Sports', 'Other'];
 
+const STEP_TITLES = {
+  1: 'Add Photo',
+  2: 'Item Details',
+  3: 'Category',
+};
+
 export default function AddItemScreen({ navigation }) {
   const { user } = useAuth();
+  
   useEffect(() => {
     if (!user) navigation.replace('SignIn');
   }, [user, navigation]);
+  
   if (!user) return null;
+
   const [step, setStep] = useState(1);
   const [imageUri, setImageUri] = useState(null);
   const [title, setTitle] = useState('');
@@ -36,33 +47,37 @@ export default function AddItemScreen({ navigation }) {
   const [location, setLocation] = useState('');
   const [category, setCategory] = useState('');
   const [loading, setLoading] = useState(false);
+  const [focusedField, setFocusedField] = useState(null);
 
-  const pickImage = () => {
-    ImagePicker.launchImageLibraryAsync({
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 3],
       quality: 0.8,
-    }).then((result) => {
-      if (!result.canceled) setImageUri(result.assets[0].uri);
     });
+    if (!result.canceled) {
+      setImageUri(result.assets[0].uri);
+    }
   };
 
   const handleNext = () => {
     if (step === 1) {
       if (!imageUri) {
-        Alert.alert('Image required', 'Please add a photo of your item.');
+        Alert.alert('Photo Required', 'Please add a photo of your item to continue.');
         return;
       }
       setStep(2);
     } else if (step === 2) {
-      if (!title.trim() || !description.trim()) {
-        Alert.alert('Required fields', 'Please enter title and description.');
+      if (!title.trim()) {
+        Alert.alert('Title Required', 'Please enter a title for your item.');
+        return;
+      }
+      if (!description.trim()) {
+        Alert.alert('Description Required', 'Please add a description for your item.');
         return;
       }
       setStep(3);
-    } else {
-      handleSubmit();
     }
   };
 
@@ -86,139 +101,238 @@ export default function AddItemScreen({ navigation }) {
     return `data:image/jpeg;base64,${base64}`;
   };
 
-  const handleSubmitAsync = async () => {
+  const handleSubmit = async () => {
     if (!category) {
-      Alert.alert('Category required', 'Please select a category.');
+      Alert.alert('Category Required', 'Please select a category for your item.');
       return;
     }
+    
     setLoading(true);
-    fetchImageAsBase64()
-      .then((base64) =>
-        addDoc(collection(firestore, 'items'), {
-          title: title.trim(),
-          description: description.trim(),
-          price: price.trim() || 'Free',
-          location: location.trim() || '',
-          contactInfo: user?.email ?? '',
-          imageBase64: base64,
-          owner: user?.displayName ?? 'Anonymous',
-          ownerEmail: user?.email ?? '',
-          category: category || 'Other',
-          status: 'available',
-          timestamp: serverTimestamp(),
-        })
-      )
-      .then(() => {
-        setLoading(false);
-        navigation.goBack();
-      })
-      .catch((err) => {
-        Alert.alert('Error', err.message ?? 'Failed to post item.');
-        setLoading(false);
+    try {
+      const base64 = await fetchImageAsBase64();
+      await addDoc(collection(firestore, 'items'), {
+        title: title.trim(),
+        description: description.trim(),
+        price: price.trim() || 'Free',
+        location: location.trim() || '',
+        contactInfo: user?.email ?? '',
+        imageBase64: base64,
+        owner: user?.displayName ?? 'Anonymous',
+        ownerEmail: user?.email ?? '',
+        category: category || 'Other',
+        status: 'available',
+        timestamp: serverTimestamp(),
       });
-  };
-
-  const onStep3Next = () => {
-    if (!category) {
-      Alert.alert('Category required', 'Please select a category.');
-      return;
+      navigation.goBack();
+    } catch (err) {
+      Alert.alert('Error', 'Failed to post item. Please try again.');
     }
-    handleSubmitAsync();
+    setLoading(false);
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.steps}>
-        <View style={[styles.stepDot, step >= 1 && styles.stepDotActive]} />
-        <View style={styles.stepLine} />
-        <View style={[styles.stepDot, step >= 2 && styles.stepDotActive]} />
-        <View style={styles.stepLine} />
-        <View style={[styles.stepDot, step >= 3 && styles.stepDotActive]} />
-      </View>
-      <Text style={styles.stepLabel}>
-        Step {step}: {step === 1 ? 'Image' : step === 2 ? 'Details' : 'Category'}
-      </Text>
-
-      {step === 1 && (
-        <View style={styles.stepContent}>
-          <TouchableOpacity style={styles.imageBtn} onPress={pickImage}>
-            {imageUri ? (
-              <Text style={styles.imageBtnText}>Change photo</Text>
-            ) : (
-              <Text style={styles.imageBtnText}>+ Add photo</Text>
-            )}
-          </TouchableOpacity>
-          {imageUri && (
-            <Text style={styles.imageHint}>Photo added ✓</Text>
-          )}
+    <ScrollView 
+      style={styles.container} 
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Progress Indicator */}
+      <View style={styles.progressContainer}>
+        <View style={styles.progressBar}>
+          <View style={[styles.progressFill, { width: `${(step / 3) * 100}%` }]} />
         </View>
-      )}
-
-      {step === 2 && (
-        <View style={styles.stepContent}>
-          <TextInput
-            style={styles.input}
-            placeholder="Title"
-            placeholderTextColor={COLORS.textSecondary}
-            value={title}
-            onChangeText={setTitle}
-          />
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            placeholder="Description"
-            placeholderTextColor={COLORS.textSecondary}
-            value={description}
-            onChangeText={setDescription}
-            multiline
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Price (or Free)"
-            placeholderTextColor={COLORS.textSecondary}
-            value={price}
-            onChangeText={setPrice}
-            keyboardType="default"
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Location"
-            placeholderTextColor={COLORS.textSecondary}
-            value={location}
-            onChangeText={setLocation}
-          />
-        </View>
-      )}
-
-      {step === 3 && (
-        <View style={styles.stepContent}>
-          {CATEGORIES.map((cat) => (
-            <TouchableOpacity
-              key={cat}
-              style={[styles.catBtn, category === cat && styles.catBtnActive]}
-              onPress={() => setCategory(cat)}
-            >
-              <Text style={[styles.catBtnText, category === cat && styles.catBtnTextActive]}>
-                {cat}
+        <View style={styles.progressSteps}>
+          {[1, 2, 3].map((s) => (
+            <View key={s} style={styles.progressStepContainer}>
+              <View style={[styles.progressDot, step >= s && styles.progressDotActive]}>
+                {step > s ? (
+                  <Text style={styles.progressCheckmark}>&#x2713;</Text>
+                ) : (
+                  <Text style={[styles.progressDotText, step >= s && styles.progressDotTextActive]}>
+                    {s}
+                  </Text>
+                )}
+              </View>
+              <Text style={[styles.progressLabel, step >= s && styles.progressLabelActive]}>
+                {STEP_TITLES[s]}
               </Text>
-            </TouchableOpacity>
+            </View>
           ))}
         </View>
-      )}
+      </View>
 
+      {/* Step Content */}
+      <View style={styles.stepContent}>
+        {step === 1 && (
+          <View>
+            <Text style={styles.stepTitle}>Add a photo</Text>
+            <Text style={styles.stepSubtitle}>
+              A good photo helps your item sell faster
+            </Text>
+            
+            <TouchableOpacity 
+              style={styles.imageUpload} 
+              onPress={pickImage}
+              activeOpacity={0.8}
+            >
+              {imageUri ? (
+                <Image 
+                  source={{ uri: imageUri }} 
+                  style={styles.previewImage}
+                  contentFit="cover"
+                />
+              ) : (
+                <View style={styles.uploadPlaceholder}>
+                  <View style={styles.uploadIcon}>
+                    <Text style={styles.uploadIconText}>+</Text>
+                  </View>
+                  <Text style={styles.uploadText}>Tap to add photo</Text>
+                  <Text style={styles.uploadHint}>JPG, PNG up to 10MB</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+            
+            {imageUri && (
+              <TouchableOpacity 
+                style={styles.changePhotoBtn}
+                onPress={pickImage}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.changePhotoBtnText}>Change Photo</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
+        {step === 2 && (
+          <View>
+            <Text style={styles.stepTitle}>Item details</Text>
+            <Text style={styles.stepSubtitle}>
+              Tell buyers about your item
+            </Text>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Title *</Text>
+              <TextInput
+                style={[styles.input, focusedField === 'title' && styles.inputFocused]}
+                placeholder="What are you selling?"
+                placeholderTextColor={COLORS.textTertiary}
+                value={title}
+                onChangeText={setTitle}
+                onFocus={() => setFocusedField('title')}
+                onBlur={() => setFocusedField(null)}
+                maxLength={80}
+              />
+              <Text style={styles.charCount}>{title.length}/80</Text>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Description *</Text>
+              <TextInput
+                style={[
+                  styles.input, 
+                  styles.textArea,
+                  focusedField === 'description' && styles.inputFocused,
+                ]}
+                placeholder="Describe your item (condition, details, etc.)"
+                placeholderTextColor={COLORS.textTertiary}
+                value={description}
+                onChangeText={setDescription}
+                onFocus={() => setFocusedField('description')}
+                onBlur={() => setFocusedField(null)}
+                multiline
+                textAlignVertical="top"
+                maxLength={500}
+              />
+              <Text style={styles.charCount}>{description.length}/500</Text>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Price</Text>
+              <TextInput
+                style={[styles.input, focusedField === 'price' && styles.inputFocused]}
+                placeholder="$0 (or leave blank for Free)"
+                placeholderTextColor={COLORS.textTertiary}
+                value={price}
+                onChangeText={setPrice}
+                onFocus={() => setFocusedField('price')}
+                onBlur={() => setFocusedField(null)}
+                keyboardType="default"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Location</Text>
+              <TextInput
+                style={[styles.input, focusedField === 'location' && styles.inputFocused]}
+                placeholder="Where can buyers pick this up?"
+                placeholderTextColor={COLORS.textTertiary}
+                value={location}
+                onChangeText={setLocation}
+                onFocus={() => setFocusedField('location')}
+                onBlur={() => setFocusedField(null)}
+              />
+            </View>
+          </View>
+        )}
+
+        {step === 3 && (
+          <View>
+            <Text style={styles.stepTitle}>Select category</Text>
+            <Text style={styles.stepSubtitle}>
+              Help buyers find your item
+            </Text>
+
+            <View style={styles.categoryGrid}>
+              {CATEGORIES.map((cat) => (
+                <TouchableOpacity
+                  key={cat}
+                  style={[styles.categoryCard, category === cat && styles.categoryCardActive]}
+                  onPress={() => setCategory(cat)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[
+                    styles.categoryCardText, 
+                    category === cat && styles.categoryCardTextActive
+                  ]}>
+                    {cat}
+                  </Text>
+                  {category === cat && (
+                    <View style={styles.categoryCheck}>
+                      <Text style={styles.categoryCheckText}>&#x2713;</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
+      </View>
+
+      {/* Action Buttons */}
       <View style={styles.actions}>
         {step > 1 && (
-          <TouchableOpacity style={styles.backBtn} onPress={() => setStep(step - 1)}>
+          <TouchableOpacity 
+            style={styles.backBtn} 
+            onPress={() => setStep(step - 1)}
+            activeOpacity={0.8}
+          >
             <Text style={styles.backBtnText}>Back</Text>
           </TouchableOpacity>
         )}
         <TouchableOpacity
           style={[styles.nextBtn, loading && styles.nextBtnDisabled]}
-          onPress={step === 3 ? onStep3Next : handleNext}
+          onPress={step === 3 ? handleSubmit : handleNext}
           disabled={loading}
+          activeOpacity={0.9}
         >
-          <Text style={styles.nextBtnText}>
-            {loading ? '...' : step === 3 ? 'Post Item' : 'Next'}
-          </Text>
+          {loading ? (
+            <ActivityIndicator color={COLORS.textInverse} size="small" />
+          ) : (
+            <Text style={styles.nextBtnText}>
+              {step === 3 ? 'Post Item' : 'Continue'}
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -226,84 +340,257 @@ export default function AddItemScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  content: { padding: SPACING.lg, paddingBottom: SPACING.xl * 2 },
-  steps: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: SPACING.md,
-  },
-  stepDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: COLORS.border,
-  },
-  stepDotActive: { backgroundColor: COLORS.primary },
-  stepLine: {
+  container: {
     flex: 1,
-    height: 2,
-    backgroundColor: COLORS.border,
-    marginHorizontal: SPACING.xs,
+    backgroundColor: COLORS.background,
   },
-  stepLabel: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
+  content: {
+    padding: SPACING.xl,
+    paddingBottom: SPACING.huge,
+  },
+
+  // Progress Indicator
+  progressContainer: {
+    marginBottom: SPACING.xxl,
+  },
+  progressBar: {
+    height: 4,
+    backgroundColor: COLORS.borderLight,
+    borderRadius: 2,
     marginBottom: SPACING.lg,
   },
-  stepContent: { marginBottom: SPACING.xl },
-  imageBtn: {
+  progressFill: {
+    height: '100%',
+    backgroundColor: COLORS.primary,
+    borderRadius: 2,
+  },
+  progressSteps: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  progressStepContainer: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  progressDot: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: COLORS.surface,
     borderWidth: 2,
     borderColor: COLORS.border,
-    borderStyle: 'dashed',
-    borderRadius: RADIUS.md,
-    padding: SPACING.xl * 2,
     alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.xs,
   },
-  imageBtnText: { fontSize: FONT_SIZES.md, color: COLORS.primary, fontWeight: '600' },
-  imageHint: { marginTop: SPACING.sm, color: COLORS.success, fontSize: FONT_SIZES.sm },
-  input: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: RADIUS.md,
-    padding: SPACING.md,
-    fontSize: FONT_SIZES.md,
+  progressDotActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  progressDotText: {
+    fontSize: FONT_SIZES.xs,
+    fontWeight: FONT_WEIGHTS.semibold,
+    color: COLORS.textTertiary,
+  },
+  progressDotTextActive: {
+    color: COLORS.textInverse,
+  },
+  progressCheckmark: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textInverse,
+    fontWeight: FONT_WEIGHTS.bold,
+  },
+  progressLabel: {
+    fontSize: FONT_SIZES.xs,
+    color: COLORS.textTertiary,
+    fontWeight: FONT_WEIGHTS.medium,
+  },
+  progressLabelActive: {
     color: COLORS.text,
+  },
+
+  // Step Content
+  stepContent: {
+    marginBottom: SPACING.xxl,
+  },
+  stepTitle: {
+    fontSize: FONT_SIZES.xxl,
+    fontWeight: FONT_WEIGHTS.bold,
+    color: COLORS.text,
+    marginBottom: SPACING.xs,
+  },
+  stepSubtitle: {
+    fontSize: FONT_SIZES.md,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.xl,
+  },
+
+  // Image Upload
+  imageUpload: {
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.lg,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    borderStyle: 'dashed',
+    overflow: 'hidden',
+    ...SHADOWS.sm,
+  },
+  uploadPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: SPACING.huge,
+  },
+  uploadIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.primaryMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: SPACING.md,
   },
-  textArea: { minHeight: 100, textAlignVertical: 'top' },
-  catBtn: {
-    backgroundColor: COLORS.surface,
-    padding: SPACING.md,
-    borderRadius: RADIUS.md,
-    marginBottom: SPACING.sm,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+  uploadIconText: {
+    fontSize: 28,
+    color: COLORS.primary,
+    fontWeight: FONT_WEIGHTS.semibold,
   },
-  catBtnActive: { borderColor: COLORS.primary, backgroundColor: 'rgba(200,16,46,0.08)' },
-  catBtnText: { fontSize: FONT_SIZES.md, color: COLORS.text },
-  catBtnTextActive: { color: COLORS.primary, fontWeight: '600' },
-  actions: { flexDirection: 'row', gap: SPACING.md, marginTop: SPACING.lg },
+  uploadText: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: FONT_WEIGHTS.semibold,
+    color: COLORS.text,
+    marginBottom: SPACING.xs,
+  },
+  uploadHint: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textTertiary,
+  },
+  previewImage: {
+    width: '100%',
+    height: 240,
+  },
+  changePhotoBtn: {
+    alignSelf: 'center',
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.xl,
+    marginTop: SPACING.md,
+  },
+  changePhotoBtnText: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: FONT_WEIGHTS.semibold,
+    color: COLORS.primary,
+  },
+
+  // Form Inputs
+  inputGroup: {
+    marginBottom: SPACING.lg,
+  },
+  inputLabel: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: FONT_WEIGHTS.semibold,
+    color: COLORS.text,
+    marginBottom: SPACING.sm,
+  },
+  input: {
+    backgroundColor: COLORS.surface,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    fontSize: FONT_SIZES.md,
+    color: COLORS.text,
+  },
+  inputFocused: {
+    borderColor: COLORS.primary,
+  },
+  textArea: {
+    minHeight: 120,
+    paddingTop: SPACING.md,
+  },
+  charCount: {
+    fontSize: FONT_SIZES.xs,
+    color: COLORS.textTertiary,
+    textAlign: 'right',
+    marginTop: SPACING.xs,
+  },
+
+  // Category Selection
+  categoryGrid: {
+    gap: SPACING.md,
+  },
+  categoryCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: COLORS.surface,
+    padding: SPACING.lg,
+    borderRadius: RADIUS.md,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    marginBottom: SPACING.sm,
+  },
+  categoryCardActive: {
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primaryMuted,
+  },
+  categoryCardText: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: FONT_WEIGHTS.medium,
+    color: COLORS.text,
+  },
+  categoryCardTextActive: {
+    color: COLORS.primary,
+    fontWeight: FONT_WEIGHTS.semibold,
+  },
+  categoryCheck: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  categoryCheckText: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textInverse,
+    fontWeight: FONT_WEIGHTS.bold,
+  },
+
+  // Action Buttons
+  actions: {
+    flexDirection: 'row',
+    gap: SPACING.md,
+  },
   backBtn: {
     flex: 1,
-    padding: SPACING.md,
+    paddingVertical: SPACING.lg,
     borderRadius: RADIUS.md,
     backgroundColor: COLORS.surface,
     alignItems: 'center',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: COLORS.border,
   },
-  backBtnText: { color: COLORS.text, fontWeight: '600' },
+  backBtnText: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: FONT_WEIGHTS.semibold,
+    color: COLORS.text,
+  },
   nextBtn: {
     flex: 2,
-    padding: SPACING.md,
+    paddingVertical: SPACING.lg,
     borderRadius: RADIUS.md,
     backgroundColor: COLORS.primary,
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 52,
+    ...SHADOWS.sm,
   },
-  nextBtnDisabled: { opacity: 0.6 },
-  nextBtnText: { color: COLORS.surface, fontWeight: '600' },
+  nextBtnDisabled: {
+    opacity: 0.7,
+  },
+  nextBtnText: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: FONT_WEIGHTS.semibold,
+    color: COLORS.textInverse,
+  },
 });
