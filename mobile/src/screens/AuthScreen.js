@@ -1,6 +1,6 @@
 /**
- * AuthScreen - Premium authentication experience
- * Features clean card design and smooth form interactions
+ * AuthScreen - Premium dark authentication
+ * Clean, formal design
  */
 import React, { useState } from 'react';
 import {
@@ -15,6 +15,7 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import {
   createUserWithEmailAndPassword,
@@ -22,7 +23,7 @@ import {
   updateProfile,
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
-import { COLORS, SPACING, RADIUS, FONT_SIZES, FONT_WEIGHTS, SHADOWS } from '../theme/constants';
+import { COLORS, SPACING, RADIUS, FONT_SIZES, FONT_WEIGHTS } from '../theme/constants';
 
 export default function AuthScreen() {
   const navigation = useNavigation();
@@ -33,6 +34,7 @@ export default function AuthScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const isSignUp = type === 'signup';
 
@@ -122,65 +124,84 @@ export default function AuthScreen() {
           </Text>
         </View>
 
-        {/* Form Card */}
-        <View style={styles.card}>
+        {/* Form */}
+        <View style={styles.form}>
           {isSignUp && (
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Full Name</Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  focusedField === 'name' && styles.inputFocused,
-                ]}
-                placeholder="Enter your name"
-                placeholderTextColor={COLORS.textTertiary}
-                value={name}
-                onChangeText={setName}
-                onFocus={() => setFocusedField('name')}
-                onBlur={() => setFocusedField(null)}
-                autoCapitalize="words"
-                editable={!loading}
-              />
+              <View style={[
+                styles.inputWrapper,
+                focusedField === 'name' && styles.inputWrapperFocused,
+              ]}>
+                <Ionicons name="person-outline" size={20} color={COLORS.textTertiary} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your name"
+                  placeholderTextColor={COLORS.textTertiary}
+                  value={name}
+                  onChangeText={setName}
+                  onFocus={() => setFocusedField('name')}
+                  onBlur={() => setFocusedField(null)}
+                  autoCapitalize="words"
+                  editable={!loading}
+                />
+              </View>
             </View>
           )}
 
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Email</Text>
-            <TextInput
-              style={[
-                styles.input,
-                focusedField === 'email' && styles.inputFocused,
-              ]}
-              placeholder="Enter your email"
-              placeholderTextColor={COLORS.textTertiary}
-              value={email}
-              onChangeText={setEmail}
-              onFocus={() => setFocusedField('email')}
-              onBlur={() => setFocusedField(null)}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoComplete="email"
-              editable={!loading}
-            />
+            <View style={[
+              styles.inputWrapper,
+              focusedField === 'email' && styles.inputWrapperFocused,
+            ]}>
+              <Ionicons name="mail-outline" size={20} color={COLORS.textTertiary} style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your email"
+                placeholderTextColor={COLORS.textTertiary}
+                value={email}
+                onChangeText={setEmail}
+                onFocus={() => setFocusedField('email')}
+                onBlur={() => setFocusedField(null)}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoComplete="email"
+                editable={!loading}
+              />
+            </View>
           </View>
 
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Password</Text>
-            <TextInput
-              style={[
-                styles.input,
-                focusedField === 'password' && styles.inputFocused,
-              ]}
-              placeholder={isSignUp ? 'Create a password' : 'Enter your password'}
-              placeholderTextColor={COLORS.textTertiary}
-              value={password}
-              onChangeText={setPassword}
-              onFocus={() => setFocusedField('password')}
-              onBlur={() => setFocusedField(null)}
-              secureTextEntry
-              autoComplete={isSignUp ? 'new-password' : 'password'}
-              editable={!loading}
-            />
+            <View style={[
+              styles.inputWrapper,
+              focusedField === 'password' && styles.inputWrapperFocused,
+            ]}>
+              <Ionicons name="lock-closed-outline" size={20} color={COLORS.textTertiary} style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder={isSignUp ? 'Create a password' : 'Enter your password'}
+                placeholderTextColor={COLORS.textTertiary}
+                value={password}
+                onChangeText={setPassword}
+                onFocus={() => setFocusedField('password')}
+                onBlur={() => setFocusedField(null)}
+                secureTextEntry={!showPassword}
+                autoComplete={isSignUp ? 'new-password' : 'password'}
+                editable={!loading}
+              />
+              <TouchableOpacity 
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.passwordToggle}
+              >
+                <Ionicons 
+                  name={showPassword ? 'eye-off-outline' : 'eye-outline'} 
+                  size={20} 
+                  color={COLORS.textTertiary} 
+                />
+              </TouchableOpacity>
+            </View>
             {isSignUp && (
               <Text style={styles.inputHint}>Must be at least 6 characters</Text>
             )}
@@ -229,62 +250,69 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   header: {
-    marginBottom: SPACING.xxl,
+    marginBottom: SPACING.xxxl,
   },
   title: {
-    fontSize: FONT_SIZES.xxxl,
-    fontWeight: FONT_WEIGHTS.heavy,
+    fontSize: FONT_SIZES.huge,
+    fontWeight: FONT_WEIGHTS.bold,
     color: COLORS.text,
     marginBottom: SPACING.sm,
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: FONT_SIZES.md,
     color: COLORS.textSecondary,
     lineHeight: FONT_SIZES.md * 1.5,
   },
-  card: {
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.xl,
-    padding: SPACING.xl,
-    ...SHADOWS.lg,
+  form: {
+    marginBottom: SPACING.xxl,
   },
   inputGroup: {
     marginBottom: SPACING.lg,
   },
   inputLabel: {
     fontSize: FONT_SIZES.sm,
-    fontWeight: FONT_WEIGHTS.semibold,
-    color: COLORS.text,
+    fontWeight: FONT_WEIGHTS.medium,
+    color: COLORS.textSecondary,
     marginBottom: SPACING.sm,
   },
-  input: {
-    backgroundColor: COLORS.background,
-    borderWidth: 1.5,
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: RADIUS.md,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
+  },
+  inputWrapperFocused: {
+    borderColor: COLORS.text,
+  },
+  inputIcon: {
+    marginRight: SPACING.sm,
+  },
+  input: {
+    flex: 1,
+    paddingVertical: SPACING.lg,
     fontSize: FONT_SIZES.md,
     color: COLORS.text,
   },
-  inputFocused: {
-    borderColor: COLORS.primary,
-    backgroundColor: COLORS.surface,
+  passwordToggle: {
+    padding: SPACING.sm,
   },
   inputHint: {
     fontSize: FONT_SIZES.xs,
     color: COLORS.textTertiary,
-    marginTop: SPACING.xs,
+    marginTop: SPACING.sm,
   },
   submitBtn: {
     backgroundColor: COLORS.primary,
     paddingVertical: SPACING.lg,
-    borderRadius: RADIUS.md,
+    borderRadius: RADIUS.sm,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: SPACING.md,
     minHeight: 52,
-    ...SHADOWS.sm,
   },
   submitBtnDisabled: {
     opacity: 0.7,
@@ -298,7 +326,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: SPACING.xxl,
     gap: SPACING.xs,
   },
   switchText: {
@@ -307,7 +334,7 @@ const styles = StyleSheet.create({
   },
   switchLink: {
     fontSize: FONT_SIZES.sm,
-    color: COLORS.primary,
+    color: COLORS.text,
     fontWeight: FONT_WEIGHTS.semibold,
   },
 });

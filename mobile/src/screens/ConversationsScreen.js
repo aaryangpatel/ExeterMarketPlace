@@ -1,6 +1,6 @@
 /**
- * ConversationsScreen - Premium messaging inbox
- * Features clean card design and unread indicators
+ * ConversationsScreen - Premium dark messaging inbox
+ * Clean, formal list design
  */
 import React, { useState, useEffect } from 'react';
 import {
@@ -11,9 +11,10 @@ import {
   StyleSheet,
   RefreshControl,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { subscribeToUserConversations } from '../services/chat';
-import { COLORS, SPACING, RADIUS, FONT_SIZES, FONT_WEIGHTS, SHADOWS } from '../theme/constants';
+import { COLORS, SPACING, RADIUS, FONT_SIZES, FONT_WEIGHTS } from '../theme/constants';
 
 function formatTime(timestamp) {
   if (!timestamp?.toMillis) return '';
@@ -23,7 +24,7 @@ function formatTime(timestamp) {
   
   // Within 24 hours - show time
   if (diff < 86400000) {
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   }
   // Within 7 days - show weekday
   if (diff < 604800000) {
@@ -87,14 +88,16 @@ export default function ConversationsScreen({ navigation }) {
         {/* Content */}
         <View style={styles.conversationContent}>
           <View style={styles.conversationHeader}>
-            <Text style={styles.conversationTitle} numberOfLines={1}>
-              {item.itemTitle}
+            <Text style={styles.conversationName} numberOfLines={1}>
+              {otherName}
             </Text>
             <Text style={styles.conversationTime}>
               {formatTime(item.lastMessageAt)}
             </Text>
           </View>
-          <Text style={styles.conversationName}>{otherName}</Text>
+          <Text style={styles.conversationTitle} numberOfLines={1}>
+            {item.itemTitle}
+          </Text>
           {item.lastMessage && (
             <Text style={styles.conversationPreview} numberOfLines={1}>
               {item.lastMessage}
@@ -102,8 +105,8 @@ export default function ConversationsScreen({ navigation }) {
           )}
         </View>
 
-        {/* Arrow */}
-        <Text style={styles.arrow}>&#x203A;</Text>
+        {/* Chevron */}
+        <Ionicons name="chevron-forward" size={18} color={COLORS.textTertiary} />
       </TouchableOpacity>
     );
   };
@@ -113,11 +116,11 @@ export default function ConversationsScreen({ navigation }) {
       {!user ? (
         <View style={styles.guestContainer}>
           <View style={styles.emptyIconContainer}>
-            <Text style={styles.emptyIcon}>&#x1F512;</Text>
+            <Ionicons name="lock-closed-outline" size={32} color={COLORS.textTertiary} />
           </View>
-          <Text style={styles.emptyTitle}>Sign in to see messages</Text>
+          <Text style={styles.emptyTitle}>Sign In Required</Text>
           <Text style={styles.emptySubtitle}>
-            Your conversations with sellers will appear here
+            Sign in to view your messages and conversations with sellers
           </Text>
           <TouchableOpacity
             style={styles.signInBtn}
@@ -130,11 +133,11 @@ export default function ConversationsScreen({ navigation }) {
       ) : conversations.length === 0 ? (
         <View style={styles.emptyContainer}>
           <View style={styles.emptyIconContainer}>
-            <Text style={styles.emptyIcon}>&#x1F4AC;</Text>
+            <Ionicons name="chatbubbles-outline" size={32} color={COLORS.textTertiary} />
           </View>
-          <Text style={styles.emptyTitle}>No conversations yet</Text>
+          <Text style={styles.emptyTitle}>No Conversations</Text>
           <Text style={styles.emptySubtitle}>
-            Tap "Message Seller" on any item to start chatting
+            Contact a seller to start a conversation
           </Text>
         </View>
       ) : (
@@ -144,11 +147,12 @@ export default function ConversationsScreen({ navigation }) {
           renderItem={renderItem}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              tintColor={COLORS.primary}
+              tintColor={COLORS.text}
             />
           }
         />
@@ -163,8 +167,12 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   list: {
-    padding: SPACING.lg,
-    paddingBottom: SPACING.huge,
+    paddingVertical: SPACING.sm,
+  },
+  separator: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginLeft: 76,
   },
 
   // Empty & Guest States
@@ -181,16 +189,13 @@ const styles = StyleSheet.create({
     padding: SPACING.xxl,
   },
   emptyIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: COLORS.primaryMuted,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: COLORS.surfaceElevated,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: SPACING.xl,
-  },
-  emptyIcon: {
-    fontSize: 36,
   },
   emptyTitle: {
     fontSize: FONT_SIZES.xl,
@@ -204,14 +209,14 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     textAlign: 'center',
     lineHeight: FONT_SIZES.md * 1.5,
+    maxWidth: 280,
   },
   signInBtn: {
     backgroundColor: COLORS.primary,
     paddingVertical: SPACING.lg,
-    paddingHorizontal: SPACING.xxl,
-    borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.xxxl,
+    borderRadius: RADIUS.sm,
     marginTop: SPACING.xl,
-    ...SHADOWS.sm,
   },
   signInBtnText: {
     color: COLORS.textInverse,
@@ -223,17 +228,14 @@ const styles = StyleSheet.create({
   conversationCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.surface,
-    padding: SPACING.lg,
-    borderRadius: RADIUS.lg,
-    marginBottom: SPACING.md,
-    ...SHADOWS.sm,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
   },
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: COLORS.primary,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: COLORS.surfaceElevated,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: SPACING.md,
@@ -241,10 +243,11 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: FONT_SIZES.lg,
     fontWeight: FONT_WEIGHTS.semibold,
-    color: COLORS.textInverse,
+    color: COLORS.text,
   },
   conversationContent: {
     flex: 1,
+    marginRight: SPACING.sm,
   },
   conversationHeader: {
     flexDirection: 'row',
@@ -252,7 +255,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: SPACING.xxs,
   },
-  conversationTitle: {
+  conversationName: {
     flex: 1,
     fontSize: FONT_SIZES.md,
     fontWeight: FONT_WEIGHTS.semibold,
@@ -263,18 +266,13 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.xs,
     color: COLORS.textTertiary,
   },
-  conversationName: {
+  conversationTitle: {
     fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
-    marginBottom: SPACING.xs,
+    marginBottom: SPACING.xxs,
   },
   conversationPreview: {
     fontSize: FONT_SIZES.sm,
     color: COLORS.textTertiary,
-  },
-  arrow: {
-    fontSize: FONT_SIZES.xxl,
-    color: COLORS.textTertiary,
-    marginLeft: SPACING.sm,
   },
 });

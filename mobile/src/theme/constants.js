@@ -1,6 +1,6 @@
 /**
- * Exeter Marketplace - Professional Design System
- * A refined, modern design system for a premium student marketplace
+ * Exeter Marketplace - Premium Dark Design System
+ * A sophisticated, formal design system with dark theme
  */
 
 export const COLORS = {
@@ -8,51 +8,55 @@ export const COLORS = {
   primary: '#A41034',
   primaryDark: '#8A0D2C',
   primaryLight: '#C8102E',
-  primaryMuted: 'rgba(164, 16, 52, 0.08)',
-  primaryFaded: 'rgba(164, 16, 52, 0.12)',
+  primaryMuted: 'rgba(164, 16, 52, 0.15)',
+  primaryFaded: 'rgba(164, 16, 52, 0.08)',
 
-  // Backgrounds
-  background: '#F5F5F7',
-  backgroundSecondary: '#EEEEF0',
-  surface: '#FFFFFF',
-  surfaceElevated: '#FFFFFF',
+  // Dark Theme Backgrounds
+  background: '#000000',
+  backgroundSecondary: '#1C1C1E',
+  backgroundTertiary: '#2C2C2E',
+  surface: '#1C1C1E',
+  surfaceElevated: '#2C2C2E',
+  surfaceHighlight: '#3A3A3C',
 
   // Text Colors
-  text: '#1D1D1F',
-  textSecondary: '#6E6E73',
-  textTertiary: '#8E8E93',
-  textMuted: '#AEAEB2',
+  text: '#FFFFFF',
+  textSecondary: '#8E8E93',
+  textTertiary: '#636366',
+  textMuted: '#48484A',
   textInverse: '#FFFFFF',
 
   // Borders & Dividers
-  border: '#D2D2D7',
-  borderLight: '#E8E8ED',
+  border: '#3A3A3C',
+  borderLight: '#2C2C2E',
   borderFocus: '#A41034',
-  divider: '#E5E5EA',
+  divider: '#2C2C2E',
 
   // Semantic Colors
-  success: '#34C759',
-  successLight: 'rgba(52, 199, 89, 0.12)',
-  error: '#FF3B30',
-  errorLight: 'rgba(255, 59, 48, 0.12)',
-  warning: '#FF9500',
-  warningLight: 'rgba(255, 149, 0, 0.12)',
-  info: '#007AFF',
-  infoLight: 'rgba(0, 122, 255, 0.12)',
+  success: '#30D158',
+  successLight: 'rgba(48, 209, 88, 0.15)',
+  error: '#FF453A',
+  errorLight: 'rgba(255, 69, 58, 0.15)',
+  warning: '#FF9F0A',
+  warningLight: 'rgba(255, 159, 10, 0.15)',
+  info: '#0A84FF',
+  infoLight: 'rgba(10, 132, 255, 0.15)',
 
   // Price & Status
-  priceGreen: '#00A67E',
-  priceFree: '#34C759',
-  sold: '#8E8E93',
-  soldBadge: '#1D1D1F',
+  priceGreen: '#30D158',
+  priceFree: '#30D158',
+  sold: '#636366',
+  soldBadge: '#48484A',
 
-  // Chat
-  chatBubbleOwn: '#A41034',
-  chatBubbleOther: '#F2F2F7',
+  // Chat - iMessage style
+  chatBubbleOwn: '#0A84FF',
+  chatBubbleOther: '#3A3A3C',
+  chatTextOwn: '#FFFFFF',
+  chatTextOther: '#FFFFFF',
 
   // Overlays
-  overlay: 'rgba(0, 0, 0, 0.4)',
-  overlayLight: 'rgba(0, 0, 0, 0.08)',
+  overlay: 'rgba(0, 0, 0, 0.6)',
+  overlayLight: 'rgba(255, 255, 255, 0.05)',
 };
 
 export const SPACING = {
@@ -115,36 +119,36 @@ export const SHADOWS = {
   xs: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
     elevation: 1,
   },
   sm: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
+    shadowOpacity: 0.35,
+    shadowRadius: 4,
     elevation: 2,
   },
   md: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
     elevation: 4,
   },
   lg: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 24,
+    shadowOpacity: 0.45,
+    shadowRadius: 16,
     elevation: 8,
   },
   xl: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.16,
-    shadowRadius: 32,
+    shadowOpacity: 0.5,
+    shadowRadius: 24,
     elevation: 12,
   },
 };

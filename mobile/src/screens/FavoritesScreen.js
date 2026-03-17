@@ -1,6 +1,6 @@
 /**
- * FavoritesScreen - Premium saved items / watchlist
- * Features clean header and polished empty state
+ * FavoritesScreen - Premium dark saved items
+ * Clean, formal design
  */
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
@@ -36,7 +36,7 @@ export default function FavoritesScreen({ items }) {
       return;
     }
     if (user.email === item.ownerEmail) {
-      Alert.alert('Unable to Message', "You can't message yourself.");
+      Alert.alert('Unable to Message', "You cannot message yourself.");
       return;
     }
     navigation.navigate('ChatRoom', {
@@ -74,8 +74,8 @@ export default function FavoritesScreen({ items }) {
         ListHeaderComponent={ListHeader}
         onRefresh={handleRefresh}
         refreshing={refreshing}
-        emptyTitle="No saved items"
-        emptySubtitle="Tap the heart on any item to save it here for later"
+        emptyTitle="No Saved Items"
+        emptySubtitle="Tap the heart icon on any item to save it here"
       />
     </View>
   );
@@ -89,6 +89,9 @@ const styles = StyleSheet.create({
   header: {
     paddingTop: SPACING.xl,
     paddingBottom: SPACING.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    marginBottom: SPACING.lg,
   },
   title: {
     fontSize: FONT_SIZES.xxl,

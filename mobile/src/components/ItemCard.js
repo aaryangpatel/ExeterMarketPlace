@@ -1,10 +1,11 @@
 /**
- * ItemCard - Premium marketplace card design
- * Features clean layout, subtle shadows, and smooth interactions
+ * ItemCard - Premium dark marketplace card
+ * Clean, formal design without emojis
  */
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Pressable } from 'react-native';
 import { Image } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, RADIUS, FONT_SIZES, FONT_WEIGHTS, SHADOWS } from '../theme/constants';
 
 export default function ItemCard({ item, onPress, onMessagePress, isFavorite, onFavoritePress }) {
@@ -37,10 +38,8 @@ export default function ItemCard({ item, onPress, onMessagePress, isFavorite, on
           />
         ) : (
           <View style={styles.imagePlaceholder}>
-            <View style={styles.placeholderIcon}>
-              <Text style={styles.placeholderIconText}>IMG</Text>
-            </View>
-            <Text style={styles.placeholderText}>No image</Text>
+            <Ionicons name="image-outline" size={32} color={COLORS.textTertiary} />
+            <Text style={styles.placeholderText}>No Image</Text>
           </View>
         )}
         
@@ -60,7 +59,11 @@ export default function ItemCard({ item, onPress, onMessagePress, isFavorite, on
             activeOpacity={0.7}
           >
             <View style={[styles.favoriteCircle, isFavorite && styles.favoriteCircleActive]}>
-              <Text style={styles.favoriteIcon}>{isFavorite ? '\u2665' : '\u2661'}</Text>
+              <Ionicons 
+                name={isFavorite ? 'heart' : 'heart-outline'} 
+                size={18} 
+                color={isFavorite ? COLORS.primary : COLORS.text} 
+              />
             </View>
           </TouchableOpacity>
         )}
@@ -81,7 +84,7 @@ export default function ItemCard({ item, onPress, onMessagePress, isFavorite, on
         {/* Location */}
         {item.location ? (
           <View style={styles.locationRow}>
-            <Text style={styles.locationIcon}>&#x1F4CD;</Text>
+            <Ionicons name="location-outline" size={14} color={COLORS.textTertiary} />
             <Text style={styles.location} numberOfLines={1}>
               {item.location}
             </Text>
@@ -95,7 +98,7 @@ export default function ItemCard({ item, onPress, onMessagePress, isFavorite, on
             onPress={() => onMessagePress(item)}
             activeOpacity={0.8}
           >
-            <Text style={styles.messageButtonText}>Message Seller</Text>
+            <Text style={styles.messageButtonText}>Contact Seller</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -109,7 +112,8 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.lg,
     overflow: 'hidden',
     marginBottom: SPACING.lg,
-    ...SHADOWS.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   cardPressed: {
     opacity: 0.95,
@@ -117,7 +121,7 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     position: 'relative',
-    backgroundColor: COLORS.backgroundSecondary,
+    backgroundColor: COLORS.backgroundTertiary,
   },
   image: {
     width: '100%',
@@ -129,24 +133,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.backgroundSecondary,
-  },
-  placeholderIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: RADIUS.md,
-    backgroundColor: COLORS.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: SPACING.sm,
-  },
-  placeholderIconText: {
-    fontSize: FONT_SIZES.xs,
-    fontWeight: FONT_WEIGHTS.semibold,
-    color: COLORS.textTertiary,
+    gap: SPACING.sm,
   },
   placeholderText: {
     fontSize: FONT_SIZES.sm,
     color: COLORS.textTertiary,
+    fontWeight: FONT_WEIGHTS.medium,
   },
   soldBadge: {
     position: 'absolute',
@@ -158,10 +150,10 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.xs,
   },
   soldBadgeText: {
-    color: COLORS.textInverse,
+    color: COLORS.text,
     fontSize: FONT_SIZES.xxs,
-    fontWeight: FONT_WEIGHTS.heavy,
-    letterSpacing: 0.5,
+    fontWeight: FONT_WEIGHTS.bold,
+    letterSpacing: 1,
   },
   favoriteButton: {
     position: 'absolute',
@@ -172,17 +164,15 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    backgroundColor: COLORS.surfaceElevated,
     alignItems: 'center',
     justifyContent: 'center',
-    ...SHADOWS.sm,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   favoriteCircleActive: {
     backgroundColor: COLORS.primaryMuted,
-  },
-  favoriteIcon: {
-    fontSize: 18,
-    color: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   content: {
     padding: SPACING.lg,
@@ -211,10 +201,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: SPACING.md,
-  },
-  locationIcon: {
-    fontSize: FONT_SIZES.sm,
-    marginRight: SPACING.xs,
+    gap: SPACING.xs,
   },
   location: {
     flex: 1,
@@ -225,7 +212,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.lg,
-    borderRadius: RADIUS.md,
+    borderRadius: RADIUS.sm,
     alignItems: 'center',
     marginTop: SPACING.xs,
   },
