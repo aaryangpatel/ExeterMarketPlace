@@ -1,5 +1,6 @@
 /**
- * HomeScreen - Professional marketplace feed with hero, search, and prominent auth CTAs.
+ * HomeScreen - Premium marketplace feed
+ * Features polished hero, elegant search, and refined filter chips
  */
 import React, { useState, useMemo } from 'react';
 import {
@@ -10,17 +11,18 @@ import {
   StyleSheet,
   Alert,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import ItemList from '../components/ItemList';
 import { useAuth } from '../context/AuthContext';
-import { COLORS, SPACING, RADIUS, FONT_SIZES, SHADOWS } from '../theme/constants';
+import { COLORS, SPACING, RADIUS, FONT_SIZES, FONT_WEIGHTS, SHADOWS } from '../theme/constants';
 
 const CATEGORIES = ['All', 'Electronics', 'Clothing', 'Books', 'Furniture', 'Sports', 'Other'];
 const SORT_OPTIONS = [
   { id: 'newest', label: 'Newest' },
-  { id: 'price-low', label: 'Price ↑' },
-  { id: 'price-high', label: 'Price ↓' },
+  { id: 'price-low', label: 'Price: Low' },
+  { id: 'price-high', label: 'Price: High' },
 ];
 
 export default function HomeScreen({ items, hasFavorite, onFavoritePress, onRefresh }) {
@@ -33,14 +35,17 @@ export default function HomeScreen({ items, hasFavorite, onFavoritePress, onRefr
   const [refreshing, setRefreshing] = useState(false);
 
   const handleItemPress = (item) => navigation.navigate('ItemDetail', { item });
+  
   const handleMessagePress = (item) => {
     if (!user) {
-      Alert.alert('Sign in required', 'Please sign in to message the seller.');
-      navigation.navigate('SignIn');
+      Alert.alert('Sign In Required', 'Please sign in to message the seller.', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Sign In', onPress: () => navigation.navigate('SignIn') },
+      ]);
       return;
     }
     if (user.email === item.ownerEmail) {
-      Alert.alert('Cannot message', "You can't message yourself.");
+      Alert.alert('Unable to Message', "You can't message yourself.");
       return;
     }
     navigation.navigate('ChatRoom', {
@@ -75,17 +80,9 @@ export default function HomeScreen({ items, hasFavorite, onFavoritePress, onRefr
         return tb - ta;
       });
     } else if (sortBy === 'price-low') {
-      list.sort((a, b) => {
-        const pa = parsePrice(a.price);
-        const pb = parsePrice(b.price);
-        return pa - pb;
-      });
+      list.sort((a, b) => parsePrice(a.price) - parsePrice(b.price));
     } else if (sortBy === 'price-high') {
-      list.sort((a, b) => {
-        const pa = parsePrice(a.price);
-        const pb = parsePrice(b.price);
-        return pb - pa;
-      });
+      list.sort((a, b) => parsePrice(b.price) - parsePrice(a.price));
     }
     return list;
   }, [items, search, category, sortBy, showSold]);
@@ -102,94 +99,118 @@ export default function HomeScreen({ items, hasFavorite, onFavoritePress, onRefr
     setTimeout(() => setRefreshing(false), 800);
   };
 
-  const hasSearchOrFilter = search.trim() || category !== 'All' || !showSold;
-  const emptyTitle = search.trim() || category !== 'All'
-    ? 'No results found'
-    : 'No items yet';
+  const emptyTitle = search.trim() || category !== 'All' ? 'No results found' : 'No items yet';
   const emptySubtitle = search.trim() || category !== 'All'
-    ? 'Try different search or filters'
+    ? 'Try adjusting your search or filters'
     : 'Be the first to post something!';
 
   const ListHeader = () => (
     <>
+      {/* Hero Section */}
       <View style={styles.hero}>
-        <Text style={styles.heroTitle}>Exeter Marketplace</Text>
-        <Text style={styles.heroSubtitle}>
-          Buy and sell with your community
-        </Text>
-        {!user && (
-          <View style={styles.authCtaRow}>
-            <TouchableOpacity
-              style={styles.authCtaPrimary}
-              onPress={() => navigation.navigate('SignIn')}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.authCtaPrimaryText}>Sign In</Text>
+        <View style={styles.heroContent}>
+          <Text style={styles.heroTitle}>Exeter{'\n'}Marketplace</Text>
+          <Text style={styles.heroSubtitle}>Buy and sell with your community</Text>
+          
+          {!user && (
+            <View style={styles.heroActions}>
+              <TouchableOpacity
+                style={styles.heroPrimaryBtn}
+                onPress={() => navigation.navigate('SignIn')}
+                activeOpacity={0.9}
+              >
+                <Text style={styles.heroPrimaryBtnText}>Sign In</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.heroSecondaryBtn}
+                onPress={() => navigation.navigate('SignUp')}
+                activeOpacity={0.9}
+              >
+                <Text style={styles.heroSecondaryBtnText}>Create Account</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      </View>
+
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <View style={styles.searchBar}>
+          <Text style={styles.searchIcon}>&#x1F50D;</Text>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search items..."
+            placeholderTextColor={COLORS.textTertiary}
+            value={search}
+            onChangeText={setSearch}
+            returnKeyType="search"
+          />
+          {search.length > 0 && (
+            <TouchableOpacity onPress={() => setSearch('')} style={styles.clearButton}>
+              <Text style={styles.clearButtonText}>&#x2715;</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.authCtaSecondary}
-              onPress={() => navigation.navigate('SignUp')}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.authCtaSecondaryText}>Create Account</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+          )}
+        </View>
       </View>
 
-      <View style={styles.searchWrapper}>
-        <Text style={styles.searchIcon}>🔍</Text>
-        <TextInput
-          style={styles.search}
-          placeholder="Search items..."
-          placeholderTextColor={COLORS.textMuted}
-          value={search}
-          onChangeText={setSearch}
-        />
-      </View>
-
-      <View style={styles.filterRow}>
-        {CATEGORIES.map((cat) => (
-          <TouchableOpacity
-            key={cat}
-            style={[styles.filterChip, category === cat && styles.filterChipActive]}
-            onPress={() => setCategory(cat)}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.filterChipText, category === cat && styles.filterChipTextActive]}>
-              {cat}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <View style={styles.sortRow}>
-        {SORT_OPTIONS.map((opt) => (
-          <TouchableOpacity
-            key={opt.id}
-            style={[styles.sortChip, sortBy === opt.id && styles.filterChipActive]}
-            onPress={() => setSortBy(opt.id)}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.filterChipText, sortBy === opt.id && styles.filterChipTextActive]}>
-              {opt.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-        <TouchableOpacity
-          style={[styles.sortChip, showSold && styles.filterChipActive]}
-          onPress={() => setShowSold(!showSold)}
-          activeOpacity={0.8}
+      {/* Category Filter */}
+      <View style={styles.filterSection}>
+        <Text style={styles.filterLabel}>Categories</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterScroll}
         >
-          <Text style={[styles.filterChipText, showSold && styles.filterChipTextActive]}>
-            Sold
-          </Text>
-        </TouchableOpacity>
+          {CATEGORIES.map((cat) => (
+            <TouchableOpacity
+              key={cat}
+              style={[styles.filterChip, category === cat && styles.filterChipActive]}
+              onPress={() => setCategory(cat)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.filterChipText, category === cat && styles.filterChipTextActive]}>
+                {cat}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
 
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>
-          {filtered.length} {filtered.length === 1 ? 'item' : 'items'}
+      {/* Sort & Options */}
+      <View style={styles.sortSection}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.sortScroll}
+        >
+          {SORT_OPTIONS.map((opt) => (
+            <TouchableOpacity
+              key={opt.id}
+              style={[styles.sortChip, sortBy === opt.id && styles.sortChipActive]}
+              onPress={() => setSortBy(opt.id)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.sortChipText, sortBy === opt.id && styles.sortChipTextActive]}>
+                {opt.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+          <TouchableOpacity
+            style={[styles.sortChip, showSold && styles.sortChipActive]}
+            onPress={() => setShowSold(!showSold)}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.sortChipText, showSold && styles.sortChipTextActive]}>
+              Show Sold
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
+
+      {/* Results Count */}
+      <View style={styles.resultsHeader}>
+        <Text style={styles.resultsCount}>
+          {filtered.length} {filtered.length === 1 ? 'item' : 'items'} found
         </Text>
       </View>
     </>
@@ -214,116 +235,126 @@ export default function HomeScreen({ items, hasFavorite, onFavoritePress, onRefr
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  scroll: { flex: 1 },
-  scrollContent: { paddingBottom: SPACING.xxl * 2 },
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  
+  // Hero Section
   hero: {
     backgroundColor: COLORS.primary,
-    paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.xl,
-    paddingBottom: SPACING.xl,
-    borderBottomLeftRadius: RADIUS.xl,
-    borderBottomRightRadius: RADIUS.xl,
-    ...SHADOWS.md,
+    paddingTop: SPACING.xxl,
+    paddingBottom: SPACING.xxxl,
+    paddingHorizontal: SPACING.xl,
+    borderBottomLeftRadius: RADIUS.xxl,
+    borderBottomRightRadius: RADIUS.xxl,
+    marginBottom: -SPACING.xl,
+  },
+  heroContent: {
+    maxWidth: 320,
   },
   heroTitle: {
-    fontSize: FONT_SIZES.xxl,
-    fontWeight: '800',
-    color: COLORS.surface,
-    letterSpacing: -0.5,
+    fontSize: FONT_SIZES.huge,
+    fontWeight: FONT_WEIGHTS.heavy,
+    color: COLORS.textInverse,
+    lineHeight: FONT_SIZES.huge * 1.1,
+    marginBottom: SPACING.sm,
   },
   heroSubtitle: {
     fontSize: FONT_SIZES.md,
-    color: 'rgba(255,255,255,0.9)',
-    marginTop: SPACING.xs,
+    color: 'rgba(255, 255, 255, 0.85)',
+    lineHeight: FONT_SIZES.md * 1.4,
   },
-  authCtaRow: {
+  heroActions: {
     flexDirection: 'row',
-    justifyContent: 'flex-start',
     alignItems: 'center',
-    marginTop: SPACING.lg,
+    marginTop: SPACING.xl,
     gap: SPACING.md,
   },
-  authCtaPrimary: {
+  heroPrimaryBtn: {
     backgroundColor: COLORS.surface,
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.xl,
     borderRadius: RADIUS.md,
     ...SHADOWS.sm,
   },
-  authCtaPrimaryText: {
+  heroPrimaryBtnText: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: FONT_WEIGHTS.semibold,
     color: COLORS.primary,
-    fontSize: FONT_SIZES.md,
-    fontWeight: '700',
   },
-  authCtaSecondary: {
-    backgroundColor: 'transparent',
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.lg,
+  heroSecondaryBtn: {
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.xl,
     borderRadius: RADIUS.md,
-    borderWidth: 2,
-    borderColor: COLORS.surface,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
   },
-  authCtaSecondaryText: {
-    color: COLORS.surface,
+  heroSecondaryBtnText: {
     fontSize: FONT_SIZES.md,
-    fontWeight: '600',
+    fontWeight: FONT_WEIGHTS.medium,
+    color: COLORS.textInverse,
   },
-  searchWrapper: {
+
+  // Search
+  searchContainer: {
+    paddingHorizontal: SPACING.lg,
+    marginBottom: SPACING.lg,
+  },
+  searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.surface,
-    marginHorizontal: SPACING.md,
-    marginTop: -SPACING.md,
-    paddingHorizontal: SPACING.md,
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    ...SHADOWS.sm,
+    borderRadius: RADIUS.lg,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: Platform.OS === 'ios' ? SPACING.md : SPACING.xs,
+    ...SHADOWS.md,
   },
-  searchIcon: { fontSize: 18, marginRight: SPACING.sm },
-  search: {
+  searchIcon: {
+    fontSize: FONT_SIZES.lg,
+    marginRight: SPACING.md,
+  },
+  searchInput: {
     flex: 1,
-    paddingVertical: SPACING.md,
     fontSize: FONT_SIZES.md,
     color: COLORS.text,
+    paddingVertical: SPACING.sm,
     ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}),
   },
-  filterRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: SPACING.md,
-    marginTop: SPACING.lg,
-    marginBottom: -SPACING.sm,
+  clearButton: {
+    padding: SPACING.xs,
+    marginLeft: SPACING.sm,
   },
-  sortRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: SPACING.md,
-    marginTop: SPACING.sm,
-    marginBottom: -SPACING.sm,
+  clearButtonText: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textTertiary,
   },
-  sortChip: {
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.md,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    marginRight: SPACING.sm,
+
+  // Filter Section
+  filterSection: {
+    marginBottom: SPACING.md,
+  },
+  filterLabel: {
+    fontSize: FONT_SIZES.xs,
+    fontWeight: FONT_WEIGHTS.semibold,
+    color: COLORS.textTertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginLeft: SPACING.lg,
     marginBottom: SPACING.sm,
-    ...SHADOWS.sm,
+  },
+  filterScroll: {
+    paddingHorizontal: SPACING.lg,
+    gap: SPACING.sm,
   },
   filterChip: {
     paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: SPACING.lg,
     borderRadius: RADIUS.full,
     backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.border,
     marginRight: SPACING.sm,
-    marginBottom: SPACING.sm,
-    ...SHADOWS.sm,
   },
   filterChipActive: {
     backgroundColor: COLORS.primary,
@@ -331,23 +362,49 @@ const styles = StyleSheet.create({
   },
   filterChipText: {
     fontSize: FONT_SIZES.sm,
+    fontWeight: FONT_WEIGHTS.medium,
     color: COLORS.textSecondary,
-    fontWeight: '500',
   },
   filterChipTextActive: {
-    color: COLORS.surface,
-    fontWeight: '600',
+    color: COLORS.textInverse,
+    fontWeight: FONT_WEIGHTS.semibold,
   },
-  sectionHeader: {
+
+  // Sort Section
+  sortSection: {
+    marginBottom: SPACING.lg,
+  },
+  sortScroll: {
+    paddingHorizontal: SPACING.lg,
+  },
+  sortChip: {
+    paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.md,
-    paddingTop: SPACING.lg,
-    paddingBottom: SPACING.sm,
+    borderRadius: RADIUS.sm,
+    backgroundColor: COLORS.backgroundSecondary,
+    marginRight: SPACING.sm,
   },
-  sectionTitle: {
+  sortChipActive: {
+    backgroundColor: COLORS.primaryMuted,
+  },
+  sortChipText: {
     fontSize: FONT_SIZES.sm,
-    fontWeight: '600',
+    fontWeight: FONT_WEIGHTS.medium,
     color: COLORS.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+  },
+  sortChipTextActive: {
+    color: COLORS.primary,
+    fontWeight: FONT_WEIGHTS.semibold,
+  },
+
+  // Results Header
+  resultsHeader: {
+    paddingHorizontal: SPACING.lg,
+    marginBottom: SPACING.md,
+  },
+  resultsCount: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: FONT_WEIGHTS.medium,
+    color: COLORS.textTertiary,
   },
 });

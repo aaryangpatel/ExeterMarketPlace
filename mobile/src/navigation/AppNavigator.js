@@ -1,8 +1,9 @@
 /**
- * AppNavigator - Professional marketplace navigation.
+ * AppNavigator - Premium navigation with refined styling
+ * Features polished header, modern tab bar, and smooth transitions
  */
 import React from 'react';
-import { TouchableOpacity, Text, View } from 'react-native';
+import { TouchableOpacity, Text, View, StyleSheet, Platform } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAuth } from '../context/AuthContext';
@@ -15,39 +16,58 @@ import ChatRoomScreen from '../screens/ChatRoomScreen';
 import AddItemScreen from '../screens/AddItemScreen';
 import EditItemsScreen from '../screens/EditItemsScreen';
 import AuthScreen from '../screens/AuthScreen';
-import { COLORS, FONT_SIZES, SPACING } from '../theme/constants';
+import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING, RADIUS, SHADOWS } from '../theme/constants';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
+// Tab Icons as text (can be replaced with proper icons)
+const TAB_ICONS = {
+  Home: { active: '\u2302', inactive: '\u2302' },
+  Messages: { active: '\u2709', inactive: '\u2709' },
+  Favorites: { active: '\u2665', inactive: '\u2661' },
+  Profile: { active: '\u2699', inactive: '\u2699' },
+};
+
+function TabIcon({ name, focused }) {
+  const icon = TAB_ICONS[name] || { active: '\u25CF', inactive: '\u25CB' };
+  return (
+    <Text style={[styles.tabIcon, focused && styles.tabIconActive]}>
+      {focused ? icon.active : icon.inactive}
+    </Text>
+  );
+}
+
 function HeaderAuthButtons({ navigation }) {
   const { user, signOut } = useAuth();
+  
   if (user) {
     return (
       <TouchableOpacity
         onPress={signOut}
         style={styles.headerBtn}
-        activeOpacity={0.8}
+        activeOpacity={0.7}
       >
         <Text style={styles.headerBtnText}>Sign Out</Text>
       </TouchableOpacity>
     );
   }
+  
   return (
     <View style={styles.headerAuthRow}>
       <TouchableOpacity
         onPress={() => navigation.navigate('SignIn')}
         style={styles.headerBtn}
-        activeOpacity={0.8}
+        activeOpacity={0.7}
       >
         <Text style={styles.headerBtnText}>Sign In</Text>
       </TouchableOpacity>
       <TouchableOpacity
         onPress={() => navigation.navigate('SignUp')}
-        style={[styles.headerBtn, styles.headerBtnPrimary]}
+        style={styles.headerBtnPrimary}
         activeOpacity={0.8}
       >
-        <Text style={[styles.headerBtnText, styles.headerBtnPrimaryText]}>Sign Up</Text>
+        <Text style={styles.headerBtnPrimaryText}>Sign Up</Text>
       </TouchableOpacity>
     </View>
   );
@@ -69,39 +89,63 @@ function FavoritesTab({ items }) {
 
 function ProfileTab({ navigation, items }) {
   const { user } = useAuth();
+  const displayName = user?.displayName ?? user?.email?.split('@')[0] ?? 'User';
+  
   return (
     <View style={styles.profileContainer}>
-      <Text style={styles.profileTitle}>
-        {user ? `Hi, ${user.displayName ?? user.email?.split('@')[0] ?? 'User'}` : 'Profile'}
-      </Text>
+      {/* Profile Header */}
+      <View style={styles.profileHeader}>
+        <View style={styles.profileAvatar}>
+          <Text style={styles.profileAvatarText}>
+            {displayName.charAt(0).toUpperCase()}
+          </Text>
+        </View>
+        <Text style={styles.profileName}>
+          {user ? `Hi, ${displayName}` : 'Welcome'}
+        </Text>
+        {user && (
+          <Text style={styles.profileEmail}>{user.email}</Text>
+        )}
+      </View>
+
+      {/* Profile Actions */}
       {user ? (
-        <>
+        <View style={styles.profileActions}>
           <TouchableOpacity
             style={styles.profileCard}
             onPress={() => navigation.navigate('EditItems', { items })}
-            activeOpacity={0.85}
+            activeOpacity={0.8}
           >
-            <Text style={styles.profileCardText}>My Listings</Text>
+            <View style={styles.profileCardIcon}>
+              <Text style={styles.profileCardIconText}>&#x1F4E6;</Text>
+            </View>
+            <View style={styles.profileCardContent}>
+              <Text style={styles.profileCardTitle}>My Listings</Text>
+              <Text style={styles.profileCardSubtitle}>View and manage your items</Text>
+            </View>
+            <Text style={styles.profileCardArrow}>&#x203A;</Text>
           </TouchableOpacity>
+
           <TouchableOpacity
             style={styles.profileCardPrimary}
             onPress={() => navigation.navigate('AddItem')}
-            activeOpacity={0.85}
+            activeOpacity={0.8}
           >
+            <Text style={styles.profileCardPrimaryIcon}>+</Text>
             <Text style={styles.profileCardPrimaryText}>Post an Item</Text>
           </TouchableOpacity>
-        </>
+        </View>
       ) : (
         <View style={styles.profileGuest}>
           <Text style={styles.profileGuestText}>
-            Sign in to post items and manage your listings.
+            Sign in to post items, manage listings, and message sellers.
           </Text>
           <TouchableOpacity
             style={styles.profileSignInBtn}
             onPress={() => navigation.navigate('SignIn')}
-            activeOpacity={0.85}
+            activeOpacity={0.8}
           >
-            <Text style={styles.profileSignInBtnText}>Sign In</Text>
+            <Text style={styles.profileSignInBtnText}>Sign In to Get Started</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -111,13 +155,21 @@ function ProfileTab({ navigation, items }) {
 
 export default function AppNavigator({ items, hasFavorite, onFavoritePress }) {
   const { unreadCount } = useUnread();
+  
   return (
     <Stack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: COLORS.primary },
-        headerTintColor: COLORS.surface,
-        headerTitleStyle: { fontSize: FONT_SIZES.lg, fontWeight: '700' },
+        headerStyle: {
+          backgroundColor: COLORS.primary,
+        },
+        headerTintColor: COLORS.textInverse,
+        headerTitleStyle: {
+          fontSize: FONT_SIZES.lg,
+          fontWeight: FONT_WEIGHTS.bold,
+        },
         headerShadowVisible: false,
+        headerBackTitleVisible: false,
+        animation: 'slide_from_right',
       }}
     >
       <Stack.Screen
@@ -125,26 +177,26 @@ export default function AppNavigator({ items, hasFavorite, onFavoritePress }) {
         options={({ navigation }) => ({
           headerShown: true,
           title: 'Exeter Marketplace',
-          headerLargeTitle: false,
           headerRight: () => <HeaderAuthButtons navigation={navigation} />,
         })}
       >
         {() => (
           <Tab.Navigator
-            screenOptions={{
+            screenOptions={({ route }) => ({
+              tabBarIcon: ({ focused }) => (
+                <TabIcon name={route.name} focused={focused} />
+              ),
               tabBarActiveTintColor: COLORS.primary,
-              tabBarInactiveTintColor: COLORS.textSecondary,
-              tabBarStyle: {
-                backgroundColor: COLORS.surface,
-                borderTopColor: COLORS.border,
-                borderTopWidth: 1,
-              },
-              tabBarLabelStyle: { fontWeight: '600', fontSize: 12 },
-            }}
+              tabBarInactiveTintColor: COLORS.textTertiary,
+              tabBarStyle: styles.tabBar,
+              tabBarLabelStyle: styles.tabBarLabel,
+              tabBarItemStyle: styles.tabBarItem,
+              headerShown: false,
+            })}
           >
             <Tab.Screen
               name="Home"
-              options={{ title: 'Home', headerShown: false }}
+              options={{ title: 'Home' }}
             >
               {() => (
                 <HomeTab
@@ -161,29 +213,31 @@ export default function AppNavigator({ items, hasFavorite, onFavoritePress }) {
                 title: 'Messages',
                 headerShown: true,
                 headerStyle: { backgroundColor: COLORS.primary },
-                headerTintColor: COLORS.surface,
+                headerTintColor: COLORS.textInverse,
                 tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
+                tabBarBadgeStyle: styles.tabBadge,
               }}
             />
             <Tab.Screen
               name="Favorites"
-              options={{ title: 'Watchlist', headerShown: false }}
+              options={{ title: 'Saved' }}
             >
               {() => <FavoritesTab items={items} />}
             </Tab.Screen>
             <Tab.Screen
               name="Profile"
-              options={{ title: 'More', headerShown: false }}
+              options={{ title: 'Profile' }}
             >
               {(nav) => <ProfileTab navigation={nav.navigation} items={items} />}
             </Tab.Screen>
           </Tab.Navigator>
         )}
       </Stack.Screen>
+      
       <Stack.Screen
         name="ItemDetail"
         component={ItemDetailScreen}
-        options={{ title: 'Item' }}
+        options={{ title: 'Item Details' }}
       />
       <Stack.Screen
         name="ChatRoom"
@@ -193,7 +247,7 @@ export default function AppNavigator({ items, hasFavorite, onFavoritePress }) {
       <Stack.Screen
         name="AddItem"
         component={AddItemScreen}
-        options={{ title: 'Post an Item' }}
+        options={{ title: 'Post Item' }}
       />
       <Stack.Screen
         name="EditItems"
@@ -216,70 +270,190 @@ export default function AppNavigator({ items, hasFavorite, onFavoritePress }) {
   );
 }
 
-const styles = {
+const styles = StyleSheet.create({
+  // Header Styles
   headerBtn: {
     paddingVertical: SPACING.xs,
-    paddingHorizontal: SPACING.sm,
+    paddingHorizontal: SPACING.md,
     marginLeft: SPACING.xs,
   },
-  headerBtnText: { color: COLORS.surface, fontWeight: '600', fontSize: 15 },
+  headerBtnText: {
+    color: COLORS.textInverse,
+    fontWeight: FONT_WEIGHTS.medium,
+    fontSize: FONT_SIZES.sm,
+  },
   headerBtnPrimary: {
     backgroundColor: COLORS.surface,
-    paddingVertical: SPACING.xs,
-    paddingHorizontal: SPACING.md,
-    borderRadius: 8,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
+    borderRadius: RADIUS.sm,
     marginLeft: SPACING.sm,
   },
-  headerBtnPrimaryText: { color: COLORS.primary, fontWeight: '700' },
-  headerAuthRow: { flexDirection: 'row', alignItems: 'center' },
+  headerBtnPrimaryText: {
+    color: COLORS.primary,
+    fontWeight: FONT_WEIGHTS.semibold,
+    fontSize: FONT_SIZES.sm,
+  },
+  headerAuthRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  // Tab Bar Styles
+  tabBar: {
+    backgroundColor: COLORS.surface,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.borderLight,
+    paddingTop: SPACING.xs,
+    paddingBottom: Platform.OS === 'ios' ? SPACING.xl : SPACING.sm,
+    height: Platform.OS === 'ios' ? 88 : 64,
+    ...SHADOWS.sm,
+  },
+  tabBarLabel: {
+    fontSize: FONT_SIZES.xxs,
+    fontWeight: FONT_WEIGHTS.medium,
+    marginTop: SPACING.xxs,
+  },
+  tabBarItem: {
+    paddingTop: SPACING.xs,
+  },
+  tabIcon: {
+    fontSize: 22,
+    color: COLORS.textTertiary,
+  },
+  tabIconActive: {
+    color: COLORS.primary,
+  },
+  tabBadge: {
+    backgroundColor: COLORS.primary,
+    fontSize: FONT_SIZES.xxs,
+    fontWeight: FONT_WEIGHTS.bold,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+  },
+
+  // Profile Tab Styles
   profileContainer: {
     flex: 1,
-    padding: SPACING.lg,
-    paddingTop: SPACING.xl,
     backgroundColor: COLORS.background,
   },
-  profileTitle: {
+  profileHeader: {
+    backgroundColor: COLORS.surface,
+    alignItems: 'center',
+    paddingVertical: SPACING.xxl,
+    paddingHorizontal: SPACING.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderLight,
+  },
+  profileAvatar: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.md,
+    ...SHADOWS.md,
+  },
+  profileAvatarText: {
+    fontSize: FONT_SIZES.xxl,
+    fontWeight: FONT_WEIGHTS.bold,
+    color: COLORS.textInverse,
+  },
+  profileName: {
     fontSize: FONT_SIZES.xl,
-    fontWeight: '800',
+    fontWeight: FONT_WEIGHTS.bold,
     color: COLORS.text,
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.xxs,
+  },
+  profileEmail: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+  },
+  profileActions: {
+    padding: SPACING.lg,
+    gap: SPACING.md,
   },
   profileCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: COLORS.surface,
     padding: SPACING.lg,
-    borderRadius: 12,
-    marginBottom: SPACING.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    borderRadius: RADIUS.lg,
+    ...SHADOWS.sm,
   },
-  profileCardText: { fontSize: FONT_SIZES.md, fontWeight: '600', color: COLORS.text },
+  profileCardIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.primaryMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: SPACING.md,
+  },
+  profileCardIconText: {
+    fontSize: 20,
+  },
+  profileCardContent: {
+    flex: 1,
+  },
+  profileCardTitle: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: FONT_WEIGHTS.semibold,
+    color: COLORS.text,
+    marginBottom: SPACING.xxs,
+  },
+  profileCardSubtitle: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+  },
+  profileCardArrow: {
+    fontSize: 24,
+    color: COLORS.textTertiary,
+    marginLeft: SPACING.sm,
+  },
   profileCardPrimary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: COLORS.primary,
     padding: SPACING.lg,
-    borderRadius: 12,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    borderRadius: RADIUS.lg,
+    ...SHADOWS.md,
   },
-  profileCardPrimaryText: { fontSize: FONT_SIZES.md, fontWeight: '700', color: COLORS.surface },
-  profileGuest: { marginTop: SPACING.md },
+  profileCardPrimaryIcon: {
+    fontSize: FONT_SIZES.xl,
+    fontWeight: FONT_WEIGHTS.bold,
+    color: COLORS.textInverse,
+    marginRight: SPACING.sm,
+  },
+  profileCardPrimaryText: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: FONT_WEIGHTS.semibold,
+    color: COLORS.textInverse,
+  },
+  profileGuest: {
+    padding: SPACING.xl,
+    alignItems: 'center',
+  },
   profileGuestText: {
     fontSize: FONT_SIZES.md,
     color: COLORS.textSecondary,
-    marginBottom: SPACING.lg,
+    textAlign: 'center',
+    lineHeight: FONT_SIZES.md * 1.5,
+    marginBottom: SPACING.xl,
   },
   profileSignInBtn: {
     backgroundColor: COLORS.primary,
-    padding: SPACING.md,
-    borderRadius: 12,
-    alignItems: 'center',
-    alignSelf: 'flex-start',
+    paddingVertical: SPACING.lg,
+    paddingHorizontal: SPACING.xxl,
+    borderRadius: RADIUS.md,
+    ...SHADOWS.sm,
   },
-  profileSignInBtnText: { color: COLORS.surface, fontWeight: '700' },
-};
+  profileSignInBtnText: {
+    color: COLORS.textInverse,
+    fontWeight: FONT_WEIGHTS.semibold,
+    fontSize: FONT_SIZES.md,
+  },
+});
