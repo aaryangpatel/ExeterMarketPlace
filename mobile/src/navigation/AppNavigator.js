@@ -1,9 +1,10 @@
 /**
- * AppNavigator - Premium navigation with refined styling
- * Features polished header, modern tab bar, and smooth transitions
+ * AppNavigator - Premium dark navigation
+ * Clean, formal styling without emojis
  */
 import React from 'react';
 import { TouchableOpacity, Text, View, StyleSheet, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAuth } from '../context/AuthContext';
@@ -16,25 +17,26 @@ import ChatRoomScreen from '../screens/ChatRoomScreen';
 import AddItemScreen from '../screens/AddItemScreen';
 import EditItemsScreen from '../screens/EditItemsScreen';
 import AuthScreen from '../screens/AuthScreen';
-import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING, RADIUS, SHADOWS } from '../theme/constants';
+import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING, RADIUS } from '../theme/constants';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-// Tab Icons as text (can be replaced with proper icons)
 const TAB_ICONS = {
-  Home: { active: '\u2302', inactive: '\u2302' },
-  Messages: { active: '\u2709', inactive: '\u2709' },
-  Favorites: { active: '\u2665', inactive: '\u2661' },
-  Profile: { active: '\u2699', inactive: '\u2699' },
+  Home: { active: 'home', inactive: 'home-outline' },
+  Messages: { active: 'chatbubble', inactive: 'chatbubble-outline' },
+  Favorites: { active: 'heart', inactive: 'heart-outline' },
+  Profile: { active: 'person', inactive: 'person-outline' },
 };
 
 function TabIcon({ name, focused }) {
-  const icon = TAB_ICONS[name] || { active: '\u25CF', inactive: '\u25CB' };
+  const icon = TAB_ICONS[name] || { active: 'ellipse', inactive: 'ellipse-outline' };
   return (
-    <Text style={[styles.tabIcon, focused && styles.tabIconActive]}>
-      {focused ? icon.active : icon.inactive}
-    </Text>
+    <Ionicons 
+      name={focused ? icon.active : icon.inactive} 
+      size={24} 
+      color={focused ? COLORS.text : COLORS.textTertiary} 
+    />
   );
 }
 
@@ -61,13 +63,6 @@ function HeaderAuthButtons({ navigation }) {
         activeOpacity={0.7}
       >
         <Text style={styles.headerBtnText}>Sign In</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        onPress={() => navigation.navigate('SignUp')}
-        style={styles.headerBtnPrimary}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.headerBtnPrimaryText}>Sign Up</Text>
       </TouchableOpacity>
     </View>
   );
@@ -101,7 +96,7 @@ function ProfileTab({ navigation, items }) {
           </Text>
         </View>
         <Text style={styles.profileName}>
-          {user ? `Hi, ${displayName}` : 'Welcome'}
+          {user ? displayName : 'Welcome'}
         </Text>
         {user && (
           <Text style={styles.profileEmail}>{user.email}</Text>
@@ -117,13 +112,13 @@ function ProfileTab({ navigation, items }) {
             activeOpacity={0.8}
           >
             <View style={styles.profileCardIcon}>
-              <Text style={styles.profileCardIconText}>&#x1F4E6;</Text>
+              <Ionicons name="cube-outline" size={22} color={COLORS.text} />
             </View>
             <View style={styles.profileCardContent}>
               <Text style={styles.profileCardTitle}>My Listings</Text>
               <Text style={styles.profileCardSubtitle}>View and manage your items</Text>
             </View>
-            <Text style={styles.profileCardArrow}>&#x203A;</Text>
+            <Ionicons name="chevron-forward" size={20} color={COLORS.textTertiary} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -131,21 +126,21 @@ function ProfileTab({ navigation, items }) {
             onPress={() => navigation.navigate('AddItem')}
             activeOpacity={0.8}
           >
-            <Text style={styles.profileCardPrimaryIcon}>+</Text>
-            <Text style={styles.profileCardPrimaryText}>Post an Item</Text>
+            <Ionicons name="add" size={22} color={COLORS.textInverse} />
+            <Text style={styles.profileCardPrimaryText}>Post New Item</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <View style={styles.profileGuest}>
           <Text style={styles.profileGuestText}>
-            Sign in to post items, manage listings, and message sellers.
+            Sign in to post items, manage your listings, and message sellers.
           </Text>
           <TouchableOpacity
             style={styles.profileSignInBtn}
             onPress={() => navigation.navigate('SignIn')}
             activeOpacity={0.8}
           >
-            <Text style={styles.profileSignInBtnText}>Sign In to Get Started</Text>
+            <Text style={styles.profileSignInBtnText}>Sign In</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -160,12 +155,12 @@ export default function AppNavigator({ items, hasFavorite, onFavoritePress }) {
     <Stack.Navigator
       screenOptions={{
         headerStyle: {
-          backgroundColor: COLORS.primary,
+          backgroundColor: COLORS.surface,
         },
-        headerTintColor: COLORS.textInverse,
+        headerTintColor: COLORS.text,
         headerTitleStyle: {
           fontSize: FONT_SIZES.lg,
-          fontWeight: FONT_WEIGHTS.bold,
+          fontWeight: FONT_WEIGHTS.semibold,
         },
         headerShadowVisible: false,
         headerBackTitleVisible: false,
@@ -186,7 +181,7 @@ export default function AppNavigator({ items, hasFavorite, onFavoritePress }) {
               tabBarIcon: ({ focused }) => (
                 <TabIcon name={route.name} focused={focused} />
               ),
-              tabBarActiveTintColor: COLORS.primary,
+              tabBarActiveTintColor: COLORS.text,
               tabBarInactiveTintColor: COLORS.textTertiary,
               tabBarStyle: styles.tabBar,
               tabBarLabelStyle: styles.tabBarLabel,
@@ -211,9 +206,6 @@ export default function AppNavigator({ items, hasFavorite, onFavoritePress }) {
               component={ConversationsScreen}
               options={{
                 title: 'Messages',
-                headerShown: true,
-                headerStyle: { backgroundColor: COLORS.primary },
-                headerTintColor: COLORS.textInverse,
                 tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
                 tabBarBadgeStyle: styles.tabBadge,
               }}
@@ -275,23 +267,10 @@ const styles = StyleSheet.create({
   headerBtn: {
     paddingVertical: SPACING.xs,
     paddingHorizontal: SPACING.md,
-    marginLeft: SPACING.xs,
   },
   headerBtnText: {
-    color: COLORS.textInverse,
-    fontWeight: FONT_WEIGHTS.medium,
-    fontSize: FONT_SIZES.sm,
-  },
-  headerBtnPrimary: {
-    backgroundColor: COLORS.surface,
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.lg,
-    borderRadius: RADIUS.sm,
-    marginLeft: SPACING.sm,
-  },
-  headerBtnPrimaryText: {
     color: COLORS.primary,
-    fontWeight: FONT_WEIGHTS.semibold,
+    fontWeight: FONT_WEIGHTS.medium,
     fontSize: FONT_SIZES.sm,
   },
   headerAuthRow: {
@@ -303,11 +282,10 @@ const styles = StyleSheet.create({
   tabBar: {
     backgroundColor: COLORS.surface,
     borderTopWidth: 1,
-    borderTopColor: COLORS.borderLight,
+    borderTopColor: COLORS.border,
     paddingTop: SPACING.xs,
     paddingBottom: Platform.OS === 'ios' ? SPACING.xl : SPACING.sm,
     height: Platform.OS === 'ios' ? 88 : 64,
-    ...SHADOWS.sm,
   },
   tabBarLabel: {
     fontSize: FONT_SIZES.xxs,
@@ -316,13 +294,6 @@ const styles = StyleSheet.create({
   },
   tabBarItem: {
     paddingTop: SPACING.xs,
-  },
-  tabIcon: {
-    fontSize: 22,
-    color: COLORS.textTertiary,
-  },
-  tabIconActive: {
-    color: COLORS.primary,
   },
   tabBadge: {
     backgroundColor: COLORS.primary,
@@ -341,28 +312,29 @@ const styles = StyleSheet.create({
   profileHeader: {
     backgroundColor: COLORS.surface,
     alignItems: 'center',
-    paddingVertical: SPACING.xxl,
+    paddingVertical: SPACING.xxxl,
     paddingHorizontal: SPACING.lg,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderLight,
+    borderBottomColor: COLORS.border,
   },
   profileAvatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: COLORS.primary,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: COLORS.surfaceElevated,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: SPACING.md,
-    ...SHADOWS.md,
+    marginBottom: SPACING.lg,
+    borderWidth: 2,
+    borderColor: COLORS.border,
   },
   profileAvatarText: {
-    fontSize: FONT_SIZES.xxl,
-    fontWeight: FONT_WEIGHTS.bold,
-    color: COLORS.textInverse,
+    fontSize: FONT_SIZES.xxxl,
+    fontWeight: FONT_WEIGHTS.semibold,
+    color: COLORS.text,
   },
   profileName: {
-    fontSize: FONT_SIZES.xl,
+    fontSize: FONT_SIZES.xxl,
     fontWeight: FONT_WEIGHTS.bold,
     color: COLORS.text,
     marginBottom: SPACING.xxs,
@@ -381,19 +353,17 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     padding: SPACING.lg,
     borderRadius: RADIUS.lg,
-    ...SHADOWS.sm,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   profileCardIcon: {
     width: 44,
     height: 44,
     borderRadius: RADIUS.md,
-    backgroundColor: COLORS.primaryMuted,
+    backgroundColor: COLORS.surfaceElevated,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: SPACING.md,
-  },
-  profileCardIconText: {
-    fontSize: 20,
   },
   profileCardContent: {
     flex: 1,
@@ -408,11 +378,6 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
   },
-  profileCardArrow: {
-    fontSize: 24,
-    color: COLORS.textTertiary,
-    marginLeft: SPACING.sm,
-  },
   profileCardPrimary: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -420,13 +385,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     padding: SPACING.lg,
     borderRadius: RADIUS.lg,
-    ...SHADOWS.md,
-  },
-  profileCardPrimaryIcon: {
-    fontSize: FONT_SIZES.xl,
-    fontWeight: FONT_WEIGHTS.bold,
-    color: COLORS.textInverse,
-    marginRight: SPACING.sm,
+    gap: SPACING.sm,
   },
   profileCardPrimaryText: {
     fontSize: FONT_SIZES.md,
@@ -443,13 +402,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: FONT_SIZES.md * 1.5,
     marginBottom: SPACING.xl,
+    maxWidth: 300,
   },
   profileSignInBtn: {
     backgroundColor: COLORS.primary,
     paddingVertical: SPACING.lg,
-    paddingHorizontal: SPACING.xxl,
-    borderRadius: RADIUS.md,
-    ...SHADOWS.sm,
+    paddingHorizontal: SPACING.xxxl,
+    borderRadius: RADIUS.sm,
   },
   profileSignInBtnText: {
     color: COLORS.textInverse,

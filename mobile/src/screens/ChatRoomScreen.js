@@ -1,6 +1,6 @@
 /**
- * ChatRoomScreen - Premium real-time chat interface
- * Features modern bubble design and smooth interactions
+ * ChatRoomScreen - iMessage-style chat interface
+ * Clean, formal messaging with blue/gray bubbles
  */
 import React, { useState, useEffect, useRef } from 'react';
 import {
@@ -14,6 +14,7 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { useUnread } from '../context/UnreadContext';
 import {
@@ -21,7 +22,7 @@ import {
   subscribeToMessages,
   sendMessage,
 } from '../services/chat';
-import { COLORS, SPACING, RADIUS, FONT_SIZES, FONT_WEIGHTS, SHADOWS } from '../theme/constants';
+import { COLORS, SPACING, RADIUS, FONT_SIZES, FONT_WEIGHTS } from '../theme/constants';
 
 export default function ChatRoomScreen({ route, navigation }) {
   const { user } = useAuth();
@@ -102,7 +103,7 @@ export default function ChatRoomScreen({ route, navigation }) {
   const formatTime = (timestamp) => {
     if (!timestamp?.toMillis) return '';
     const date = new Date(timestamp.toMillis());
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   };
 
   const formatDate = (timestamp) => {
@@ -114,13 +115,13 @@ export default function ChatRoomScreen({ route, navigation }) {
     
     if (date.toDateString() === today.toDateString()) return 'Today';
     if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
-    return date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+    return date.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' });
   };
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
+        <ActivityIndicator size="large" color={COLORS.info} />
         <Text style={styles.loadingText}>Loading conversation...</Text>
       </View>
     );
@@ -129,8 +130,13 @@ export default function ChatRoomScreen({ route, navigation }) {
   const renderMessage = ({ item, index }) => {
     const isMe = item.senderId === user?.email;
     const prevItem = messages[index - 1];
+    const nextItem = messages[index + 1];
     const showDate = !prevItem || 
       formatDate(item.createdAt) !== formatDate(prevItem?.createdAt);
+    
+    // Check if this is part of a group of messages from the same sender
+    const isFirstInGroup = !prevItem || prevItem.senderId !== item.senderId || showDate;
+    const isLastInGroup = !nextItem || nextItem.senderId !== item.senderId;
 
     return (
       <>
@@ -139,15 +145,22 @@ export default function ChatRoomScreen({ route, navigation }) {
             <Text style={styles.dateHeaderText}>{formatDate(item.createdAt)}</Text>
           </View>
         )}
-        <View style={[styles.messageContainer, isMe && styles.messageContainerMe]}>
-          <View style={[styles.bubble, isMe ? styles.bubbleMe : styles.bubbleThem]}>
+        <View style={[styles.messageRow, isMe && styles.messageRowMe]}>
+          <View style={[
+            styles.bubble, 
+            isMe ? styles.bubbleMe : styles.bubbleThem,
+            isFirstInGroup && (isMe ? styles.bubbleMeFirst : styles.bubbleThemFirst),
+            isLastInGroup && (isMe ? styles.bubbleMeLast : styles.bubbleThemLast),
+          ]}>
             <Text style={[styles.bubbleText, isMe && styles.bubbleTextMe]}>
               {item.text}
             </Text>
           </View>
-          <Text style={[styles.messageMeta, isMe && styles.messageMetaMe]}>
-            {isMe ? '' : `${item.senderName} \u00B7 `}{formatTime(item.createdAt)}
-          </Text>
+          {isLastInGroup && (
+            <Text style={[styles.messageTime, isMe && styles.messageTimeMe]}>
+              {formatTime(item.createdAt)}
+            </Text>
+          )}
         </View>
       </>
     );
@@ -159,6 +172,11 @@ export default function ChatRoomScreen({ route, navigation }) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
+      {/* Item Context Bar */}
+      <View style={styles.contextBar}>
+        <Text style={styles.contextText}>Regarding: {itemTitle}</Text>
+      </View>
+
       {/* Messages */}
       <FlatList
         ref={flatRef}
@@ -170,22 +188,22 @@ export default function ChatRoomScreen({ route, navigation }) {
         ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
             <View style={styles.emptyIconContainer}>
-              <Text style={styles.emptyIcon}>&#x1F4AC;</Text>
+              <Ionicons name="chatbubbles-outline" size={32} color={COLORS.textTertiary} />
             </View>
-            <Text style={styles.emptyTitle}>Start the conversation</Text>
+            <Text style={styles.emptyTitle}>No Messages Yet</Text>
             <Text style={styles.emptySubtitle}>
-              Send a message to discuss "{itemTitle}"
+              Send a message to start the conversation
             </Text>
           </View>
         )}
       />
 
-      {/* Input Bar */}
+      {/* Input Bar - iMessage style */}
       <View style={styles.inputBar}>
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
-            placeholder="Type a message..."
+            placeholder="Message"
             placeholderTextColor={COLORS.textTertiary}
             value={input}
             onChangeText={setInput}
@@ -206,7 +224,7 @@ export default function ChatRoomScreen({ route, navigation }) {
           {sending ? (
             <ActivityIndicator size="small" color={COLORS.textInverse} />
           ) : (
-            <Text style={styles.sendBtnText}>&#x2191;</Text>
+            <Ionicons name="arrow-up" size={20} color={COLORS.textInverse} />
           )}
         </TouchableOpacity>
       </View>
@@ -218,6 +236,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  
+  // Context Bar
+  contextBar: {
+    backgroundColor: COLORS.surface,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  contextText: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
   },
   
   // Loading
@@ -235,7 +267,8 @@ const styles = StyleSheet.create({
 
   // Messages
   messageList: {
-    padding: SPACING.lg,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
     paddingBottom: SPACING.xl,
   },
   dateHeader: {
@@ -246,49 +279,59 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.xs,
     fontWeight: FONT_WEIGHTS.medium,
     color: COLORS.textTertiary,
-    backgroundColor: COLORS.backgroundSecondary,
-    paddingVertical: SPACING.xs,
-    paddingHorizontal: SPACING.md,
-    borderRadius: RADIUS.full,
   },
-  messageContainer: {
-    marginBottom: SPACING.sm,
-    maxWidth: '80%',
-    alignSelf: 'flex-start',
+  messageRow: {
+    marginBottom: SPACING.xxs,
+    alignItems: 'flex-start',
   },
-  messageContainerMe: {
-    alignSelf: 'flex-end',
+  messageRowMe: {
+    alignItems: 'flex-end',
   },
   bubble: {
-    padding: SPACING.md,
-    borderRadius: RADIUS.lg,
+    maxWidth: '75%',
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    borderRadius: RADIUS.xl,
   },
   bubbleMe: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.chatBubbleOwn,
     borderBottomRightRadius: RADIUS.xs,
   },
   bubbleThem: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.chatBubbleOther,
     borderBottomLeftRadius: RADIUS.xs,
-    ...SHADOWS.xs,
+  },
+  bubbleMeFirst: {
+    borderTopRightRadius: RADIUS.xl,
+  },
+  bubbleThemFirst: {
+    borderTopLeftRadius: RADIUS.xl,
+  },
+  bubbleMeLast: {
+    borderBottomRightRadius: RADIUS.xs,
+    marginBottom: SPACING.xs,
+  },
+  bubbleThemLast: {
+    borderBottomLeftRadius: RADIUS.xs,
+    marginBottom: SPACING.xs,
   },
   bubbleText: {
     fontSize: FONT_SIZES.md,
-    color: COLORS.text,
-    lineHeight: FONT_SIZES.md * 1.4,
+    color: COLORS.chatTextOther,
+    lineHeight: FONT_SIZES.md * 1.35,
   },
   bubbleTextMe: {
-    color: COLORS.textInverse,
+    color: COLORS.chatTextOwn,
   },
-  messageMeta: {
+  messageTime: {
     fontSize: FONT_SIZES.xxs,
     color: COLORS.textTertiary,
-    marginTop: SPACING.xs,
+    marginTop: SPACING.xxs,
     marginLeft: SPACING.xs,
   },
-  messageMetaMe: {
-    textAlign: 'right',
+  messageTimeMe: {
     marginRight: SPACING.xs,
+    marginLeft: 0,
   },
 
   // Empty State
@@ -302,13 +345,10 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: COLORS.primaryMuted,
+    backgroundColor: COLORS.surfaceElevated,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: SPACING.lg,
-  },
-  emptyIcon: {
-    fontSize: 28,
   },
   emptyTitle: {
     fontSize: FONT_SIZES.lg,
@@ -323,48 +363,41 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.xxl,
   },
 
-  // Input Bar
+  // Input Bar - iMessage style
   inputBar: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    padding: SPACING.md,
-    paddingBottom: Platform.OS === 'ios' ? SPACING.xl : SPACING.md,
+    padding: SPACING.sm,
+    paddingBottom: Platform.OS === 'ios' ? SPACING.xl : SPACING.sm,
     backgroundColor: COLORS.surface,
     borderTopWidth: 1,
-    borderTopColor: COLORS.borderLight,
+    borderTopColor: COLORS.border,
+    gap: SPACING.sm,
   },
   inputContainer: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.backgroundTertiary,
     borderRadius: RADIUS.xl,
     borderWidth: 1,
     borderColor: COLORS.border,
-    marginRight: SPACING.sm,
-    maxHeight: 120,
+    maxHeight: 100,
   },
   input: {
     paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
+    paddingVertical: SPACING.sm,
     fontSize: FONT_SIZES.md,
     color: COLORS.text,
-    maxHeight: 100,
+    maxHeight: 80,
   },
   sendBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: COLORS.primary,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: COLORS.info,
     alignItems: 'center',
     justifyContent: 'center',
-    ...SHADOWS.sm,
   },
   sendBtnDisabled: {
-    backgroundColor: COLORS.border,
-    ...SHADOWS.none,
-  },
-  sendBtnText: {
-    fontSize: FONT_SIZES.xl,
-    fontWeight: FONT_WEIGHTS.bold,
-    color: COLORS.textInverse,
+    backgroundColor: COLORS.surfaceHighlight,
   },
 });

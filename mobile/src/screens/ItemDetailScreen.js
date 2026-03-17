@@ -1,6 +1,6 @@
 /**
- * ItemDetailScreen - Premium item detail view
- * Features full-width image, clean layout, and prominent CTAs
+ * ItemDetailScreen - Premium dark item detail
+ * Clean, formal design without emojis
  */
 import React from 'react';
 import {
@@ -13,9 +13,10 @@ import {
   Platform,
 } from 'react-native';
 import { Image } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { useWatchlist } from '../context/WatchlistContext';
-import { COLORS, SPACING, RADIUS, FONT_SIZES, FONT_WEIGHTS, SHADOWS } from '../theme/constants';
+import { COLORS, SPACING, RADIUS, FONT_SIZES, FONT_WEIGHTS } from '../theme/constants';
 
 export default function ItemDetailScreen({ route, navigation }) {
   const { item } = route.params ?? {};
@@ -47,7 +48,7 @@ export default function ItemDetailScreen({ route, navigation }) {
       return;
     }
     if (user.email === item.ownerEmail) {
-      Alert.alert('Unable to Message', "You can't message yourself.");
+      Alert.alert('Unable to Message', "You cannot message yourself.");
       return;
     }
     navigation.navigate('ChatRoom', {
@@ -75,10 +76,8 @@ export default function ItemDetailScreen({ route, navigation }) {
             />
           ) : (
             <View style={styles.imagePlaceholder}>
-              <View style={styles.placeholderIcon}>
-                <Text style={styles.placeholderIconText}>IMG</Text>
-              </View>
-              <Text style={styles.placeholderText}>No image available</Text>
+              <Ionicons name="image-outline" size={48} color={COLORS.textTertiary} />
+              <Text style={styles.placeholderText}>No Image Available</Text>
             </View>
           )}
           
@@ -89,7 +88,11 @@ export default function ItemDetailScreen({ route, navigation }) {
             activeOpacity={0.8}
           >
             <View style={[styles.favoriteCircle, isFav && styles.favoriteCircleActive]}>
-              <Text style={styles.favoriteIcon}>{isFav ? '\u2665' : '\u2661'}</Text>
+              <Ionicons 
+                name={isFav ? 'heart' : 'heart-outline'} 
+                size={22} 
+                color={isFav ? COLORS.primary : COLORS.text} 
+              />
             </View>
           </TouchableOpacity>
 
@@ -130,7 +133,7 @@ export default function ItemDetailScreen({ route, navigation }) {
             
             {item.location && (
               <View style={styles.detailRow}>
-                <Text style={styles.detailIcon}>&#x1F4CD;</Text>
+                <Ionicons name="location-outline" size={20} color={COLORS.textSecondary} />
                 <View style={styles.detailContent}>
                   <Text style={styles.detailLabel}>Location</Text>
                   <Text style={styles.detailValue}>{item.location}</Text>
@@ -139,7 +142,7 @@ export default function ItemDetailScreen({ route, navigation }) {
             )}
 
             <View style={styles.detailRow}>
-              <Text style={styles.detailIcon}>&#x1F464;</Text>
+              <Ionicons name="person-outline" size={20} color={COLORS.textSecondary} />
               <View style={styles.detailContent}>
                 <Text style={styles.detailLabel}>Seller</Text>
                 <Text style={styles.detailValue}>{item.owner}</Text>
@@ -164,7 +167,7 @@ export default function ItemDetailScreen({ route, navigation }) {
               onPress={handleMessage}
               activeOpacity={0.9}
             >
-              <Text style={styles.messageBtnText}>Message Seller</Text>
+              <Text style={styles.messageBtnText}>Contact Seller</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -200,24 +203,12 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.backgroundSecondary,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  placeholderIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: RADIUS.lg,
-    backgroundColor: COLORS.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: SPACING.md,
-  },
-  placeholderIconText: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: FONT_WEIGHTS.semibold,
-    color: COLORS.textTertiary,
+    gap: SPACING.md,
   },
   placeholderText: {
     fontSize: FONT_SIZES.md,
     color: COLORS.textTertiary,
+    fontWeight: FONT_WEIGHTS.medium,
   },
   favoriteBtn: {
     position: 'absolute',
@@ -228,17 +219,15 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    backgroundColor: COLORS.surfaceElevated,
     alignItems: 'center',
     justifyContent: 'center',
-    ...SHADOWS.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   favoriteCircleActive: {
     backgroundColor: COLORS.primaryMuted,
-  },
-  favoriteIcon: {
-    fontSize: 22,
-    color: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   soldBadge: {
     position: 'absolute',
@@ -250,10 +239,10 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.sm,
   },
   soldBadgeText: {
-    color: COLORS.textInverse,
+    color: COLORS.text,
     fontSize: FONT_SIZES.xs,
-    fontWeight: FONT_WEIGHTS.heavy,
-    letterSpacing: 0.5,
+    fontWeight: FONT_WEIGHTS.bold,
+    letterSpacing: 1,
   },
 
   // Content
@@ -272,7 +261,7 @@ const styles = StyleSheet.create({
   },
   price: {
     fontSize: FONT_SIZES.xxxl,
-    fontWeight: FONT_WEIGHTS.heavy,
+    fontWeight: FONT_WEIGHTS.bold,
     color: COLORS.priceGreen,
   },
   priceFree: {
@@ -284,16 +273,18 @@ const styles = StyleSheet.create({
   },
   categoryTag: {
     alignSelf: 'flex-start',
-    backgroundColor: COLORS.primaryMuted,
+    backgroundColor: COLORS.surfaceElevated,
     paddingVertical: SPACING.xs,
     paddingHorizontal: SPACING.md,
     borderRadius: RADIUS.full,
     marginBottom: SPACING.xl,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   categoryTagText: {
     fontSize: FONT_SIZES.sm,
     fontWeight: FONT_WEIGHTS.medium,
-    color: COLORS.primary,
+    color: COLORS.textSecondary,
   },
 
   // Sections
@@ -305,7 +296,7 @@ const styles = StyleSheet.create({
     fontWeight: FONT_WEIGHTS.semibold,
     color: COLORS.textTertiary,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 1,
     marginBottom: SPACING.md,
   },
   description: {
@@ -318,11 +309,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: SPACING.md,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderLight,
-  },
-  detailIcon: {
-    fontSize: FONT_SIZES.lg,
-    marginRight: SPACING.md,
+    borderBottomColor: COLORS.border,
+    gap: SPACING.md,
   },
   detailContent: {
     flex: 1,
@@ -342,9 +330,8 @@ const styles = StyleSheet.create({
   actionBar: {
     backgroundColor: COLORS.surface,
     borderTopWidth: 1,
-    borderTopColor: COLORS.borderLight,
+    borderTopColor: COLORS.border,
     paddingBottom: Platform.OS === 'ios' ? SPACING.xxl : SPACING.lg,
-    ...SHADOWS.lg,
   },
   actionBarContent: {
     flexDirection: 'row',
@@ -372,8 +359,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     paddingVertical: SPACING.lg,
     paddingHorizontal: SPACING.xxl,
-    borderRadius: RADIUS.md,
-    ...SHADOWS.sm,
+    borderRadius: RADIUS.sm,
   },
   messageBtnText: {
     color: COLORS.textInverse,

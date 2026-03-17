@@ -1,6 +1,6 @@
 /**
- * AddItemScreen - Premium multi-step posting flow
- * Features progress indicator, clean forms, and polished interactions
+ * AddItemScreen - Premium dark multi-step posting
+ * Clean, formal design without emojis
  */
 import React, { useState, useEffect } from 'react';
 import {
@@ -15,18 +15,19 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Image } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { firestore } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
-import { COLORS, SPACING, RADIUS, FONT_SIZES, FONT_WEIGHTS, SHADOWS } from '../theme/constants';
+import { COLORS, SPACING, RADIUS, FONT_SIZES, FONT_WEIGHTS } from '../theme/constants';
 
 const CATEGORIES = ['Electronics', 'Clothing', 'Books', 'Furniture', 'Sports', 'Other'];
 
 const STEP_TITLES = {
-  1: 'Add Photo',
-  2: 'Item Details',
+  1: 'Photo',
+  2: 'Details',
   3: 'Category',
 };
 
@@ -146,7 +147,7 @@ export default function AddItemScreen({ navigation }) {
             <View key={s} style={styles.progressStepContainer}>
               <View style={[styles.progressDot, step >= s && styles.progressDotActive]}>
                 {step > s ? (
-                  <Text style={styles.progressCheckmark}>&#x2713;</Text>
+                  <Ionicons name="checkmark" size={14} color={COLORS.textInverse} />
                 ) : (
                   <Text style={[styles.progressDotText, step >= s && styles.progressDotTextActive]}>
                     {s}
@@ -165,7 +166,7 @@ export default function AddItemScreen({ navigation }) {
       <View style={styles.stepContent}>
         {step === 1 && (
           <View>
-            <Text style={styles.stepTitle}>Add a photo</Text>
+            <Text style={styles.stepTitle}>Add a Photo</Text>
             <Text style={styles.stepSubtitle}>
               A good photo helps your item sell faster
             </Text>
@@ -184,9 +185,9 @@ export default function AddItemScreen({ navigation }) {
               ) : (
                 <View style={styles.uploadPlaceholder}>
                   <View style={styles.uploadIcon}>
-                    <Text style={styles.uploadIconText}>+</Text>
+                    <Ionicons name="camera-outline" size={32} color={COLORS.text} />
                   </View>
-                  <Text style={styles.uploadText}>Tap to add photo</Text>
+                  <Text style={styles.uploadText}>Tap to Add Photo</Text>
                   <Text style={styles.uploadHint}>JPG, PNG up to 10MB</Text>
                 </View>
               )}
@@ -198,6 +199,7 @@ export default function AddItemScreen({ navigation }) {
                 onPress={pickImage}
                 activeOpacity={0.8}
               >
+                <Ionicons name="refresh-outline" size={18} color={COLORS.text} />
                 <Text style={styles.changePhotoBtnText}>Change Photo</Text>
               </TouchableOpacity>
             )}
@@ -206,13 +208,13 @@ export default function AddItemScreen({ navigation }) {
 
         {step === 2 && (
           <View>
-            <Text style={styles.stepTitle}>Item details</Text>
+            <Text style={styles.stepTitle}>Item Details</Text>
             <Text style={styles.stepSubtitle}>
               Tell buyers about your item
             </Text>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Title *</Text>
+              <Text style={styles.inputLabel}>Title</Text>
               <TextInput
                 style={[styles.input, focusedField === 'title' && styles.inputFocused]}
                 placeholder="What are you selling?"
@@ -227,7 +229,7 @@ export default function AddItemScreen({ navigation }) {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Description *</Text>
+              <Text style={styles.inputLabel}>Description</Text>
               <TextInput
                 style={[
                   styles.input, 
@@ -278,7 +280,7 @@ export default function AddItemScreen({ navigation }) {
 
         {step === 3 && (
           <View>
-            <Text style={styles.stepTitle}>Select category</Text>
+            <Text style={styles.stepTitle}>Select Category</Text>
             <Text style={styles.stepSubtitle}>
               Help buyers find your item
             </Text>
@@ -299,7 +301,7 @@ export default function AddItemScreen({ navigation }) {
                   </Text>
                   {category === cat && (
                     <View style={styles.categoryCheck}>
-                      <Text style={styles.categoryCheckText}>&#x2713;</Text>
+                      <Ionicons name="checkmark" size={16} color={COLORS.textInverse} />
                     </View>
                   )}
                 </TouchableOpacity>
@@ -354,15 +356,15 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xxl,
   },
   progressBar: {
-    height: 4,
-    backgroundColor: COLORS.borderLight,
-    borderRadius: 2,
+    height: 2,
+    backgroundColor: COLORS.border,
+    borderRadius: 1,
     marginBottom: SPACING.lg,
   },
   progressFill: {
     height: '100%',
-    backgroundColor: COLORS.primary,
-    borderRadius: 2,
+    backgroundColor: COLORS.text,
+    borderRadius: 1,
   },
   progressSteps: {
     flexDirection: 'row',
@@ -377,15 +379,15 @@ const styles = StyleSheet.create({
     height: 28,
     borderRadius: 14,
     backgroundColor: COLORS.surface,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: COLORS.border,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: SPACING.xs,
   },
   progressDotActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
+    backgroundColor: COLORS.text,
+    borderColor: COLORS.text,
   },
   progressDotText: {
     fontSize: FONT_SIZES.xs,
@@ -393,12 +395,7 @@ const styles = StyleSheet.create({
     color: COLORS.textTertiary,
   },
   progressDotTextActive: {
-    color: COLORS.textInverse,
-  },
-  progressCheckmark: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.textInverse,
-    fontWeight: FONT_WEIGHTS.bold,
+    color: COLORS.background,
   },
   progressLabel: {
     fontSize: FONT_SIZES.xs,
@@ -429,11 +426,10 @@ const styles = StyleSheet.create({
   imageUpload: {
     backgroundColor: COLORS.surface,
     borderRadius: RADIUS.lg,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: COLORS.border,
     borderStyle: 'dashed',
     overflow: 'hidden',
-    ...SHADOWS.sm,
   },
   uploadPlaceholder: {
     alignItems: 'center',
@@ -441,18 +437,13 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.huge,
   },
   uploadIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: COLORS.primaryMuted,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: COLORS.surfaceElevated,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: SPACING.md,
-  },
-  uploadIconText: {
-    fontSize: 28,
-    color: COLORS.primary,
-    fontWeight: FONT_WEIGHTS.semibold,
   },
   uploadText: {
     fontSize: FONT_SIZES.md,
@@ -469,15 +460,17 @@ const styles = StyleSheet.create({
     height: 240,
   },
   changePhotoBtn: {
-    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.xl,
     marginTop: SPACING.md,
+    gap: SPACING.sm,
   },
   changePhotoBtnText: {
     fontSize: FONT_SIZES.md,
-    fontWeight: FONT_WEIGHTS.semibold,
-    color: COLORS.primary,
+    fontWeight: FONT_WEIGHTS.medium,
+    color: COLORS.text,
   },
 
   // Form Inputs
@@ -486,13 +479,13 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: FONT_SIZES.sm,
-    fontWeight: FONT_WEIGHTS.semibold,
-    color: COLORS.text,
+    fontWeight: FONT_WEIGHTS.medium,
+    color: COLORS.textSecondary,
     marginBottom: SPACING.sm,
   },
   input: {
     backgroundColor: COLORS.surface,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: RADIUS.md,
     paddingHorizontal: SPACING.lg,
@@ -501,7 +494,7 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   inputFocused: {
-    borderColor: COLORS.primary,
+    borderColor: COLORS.text,
   },
   textArea: {
     minHeight: 120,
@@ -516,7 +509,7 @@ const styles = StyleSheet.create({
 
   // Category Selection
   categoryGrid: {
-    gap: SPACING.md,
+    gap: SPACING.sm,
   },
   categoryCard: {
     flexDirection: 'row',
@@ -525,13 +518,13 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     padding: SPACING.lg,
     borderRadius: RADIUS.md,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: COLORS.border,
     marginBottom: SPACING.sm,
   },
   categoryCardActive: {
-    borderColor: COLORS.primary,
-    backgroundColor: COLORS.primaryMuted,
+    borderColor: COLORS.text,
+    backgroundColor: COLORS.surfaceElevated,
   },
   categoryCardText: {
     fontSize: FONT_SIZES.md,
@@ -539,21 +532,15 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   categoryCardTextActive: {
-    color: COLORS.primary,
     fontWeight: FONT_WEIGHTS.semibold,
   },
   categoryCheck: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.text,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  categoryCheckText: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.textInverse,
-    fontWeight: FONT_WEIGHTS.bold,
   },
 
   // Action Buttons
@@ -564,10 +551,10 @@ const styles = StyleSheet.create({
   backBtn: {
     flex: 1,
     paddingVertical: SPACING.lg,
-    borderRadius: RADIUS.md,
+    borderRadius: RADIUS.sm,
     backgroundColor: COLORS.surface,
     alignItems: 'center',
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: COLORS.border,
   },
   backBtnText: {
@@ -578,12 +565,11 @@ const styles = StyleSheet.create({
   nextBtn: {
     flex: 2,
     paddingVertical: SPACING.lg,
-    borderRadius: RADIUS.md,
+    borderRadius: RADIUS.sm,
     backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 52,
-    ...SHADOWS.sm,
   },
   nextBtnDisabled: {
     opacity: 0.7,

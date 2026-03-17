@@ -1,6 +1,6 @@
 /**
- * EditItemsScreen - Premium listings management
- * Features clean card design, inline editing, and smooth interactions
+ * EditItemsScreen - Premium dark listings management
+ * Clean, formal design without emojis
  */
 import React, { useState, useEffect } from 'react';
 import {
@@ -16,12 +16,13 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import { updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { firestore } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
-import { COLORS, SPACING, RADIUS, FONT_SIZES, FONT_WEIGHTS, SHADOWS } from '../theme/constants';
+import { COLORS, SPACING, RADIUS, FONT_SIZES, FONT_WEIGHTS } from '../theme/constants';
 
 export default function EditItemsScreen({ route, navigation }) {
   const { items } = route.params ?? { items: [] };
@@ -157,7 +158,8 @@ export default function EditItemsScreen({ route, navigation }) {
             />
           ) : (
             <View style={styles.imagePlaceholder}>
-              <Text style={styles.placeholderText}>No image</Text>
+              <Ionicons name="image-outline" size={24} color={COLORS.textTertiary} />
+              <Text style={styles.placeholderText}>No Image</Text>
             </View>
           )}
           {isSold && (
@@ -176,6 +178,7 @@ export default function EditItemsScreen({ route, navigation }) {
                 onPress={() => handleChangeImage(item.id)}
                 activeOpacity={0.8}
               >
+                <Ionicons name="camera-outline" size={18} color={COLORS.text} />
                 <Text style={styles.changeImageBtnText}>Change Photo</Text>
               </TouchableOpacity>
 
@@ -262,7 +265,10 @@ export default function EditItemsScreen({ route, navigation }) {
                 {isSold ? 'Sold' : item.price || 'Free'}
               </Text>
               {item.location && (
-                <Text style={styles.itemLocation}>{item.location}</Text>
+                <View style={styles.locationRow}>
+                  <Ionicons name="location-outline" size={14} color={COLORS.textTertiary} />
+                  <Text style={styles.itemLocation}>{item.location}</Text>
+                </View>
               )}
 
               <View style={styles.itemActions}>
@@ -302,9 +308,9 @@ export default function EditItemsScreen({ route, navigation }) {
       {userItems.length === 0 ? (
         <View style={styles.empty}>
           <View style={styles.emptyIconContainer}>
-            <Text style={styles.emptyIcon}>&#x1F4E6;</Text>
+            <Ionicons name="cube-outline" size={32} color={COLORS.textTertiary} />
           </View>
-          <Text style={styles.emptyTitle}>No listings yet</Text>
+          <Text style={styles.emptyTitle}>No Listings Yet</Text>
           <Text style={styles.emptySubtitle}>
             Post your first item to start selling
           </Text>
@@ -330,7 +336,7 @@ export default function EditItemsScreen({ route, navigation }) {
                 setRefreshing(true);
                 setTimeout(() => setRefreshing(false), 600);
               }}
-              tintColor={COLORS.primary}
+              tintColor={COLORS.text}
             />
           }
         />
@@ -357,16 +363,13 @@ const styles = StyleSheet.create({
     padding: SPACING.xxl,
   },
   emptyIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: COLORS.primaryMuted,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: COLORS.surfaceElevated,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: SPACING.xl,
-  },
-  emptyIcon: {
-    fontSize: 36,
   },
   emptyTitle: {
     fontSize: FONT_SIZES.xl,
@@ -383,9 +386,8 @@ const styles = StyleSheet.create({
   emptyBtn: {
     backgroundColor: COLORS.primary,
     paddingVertical: SPACING.lg,
-    paddingHorizontal: SPACING.xxl,
-    borderRadius: RADIUS.md,
-    ...SHADOWS.sm,
+    paddingHorizontal: SPACING.xxxl,
+    borderRadius: RADIUS.sm,
   },
   emptyBtnText: {
     color: COLORS.textInverse,
@@ -399,7 +401,8 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.lg,
     overflow: 'hidden',
     marginBottom: SPACING.lg,
-    ...SHADOWS.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   imageContainer: {
     position: 'relative',
@@ -414,6 +417,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.backgroundSecondary,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: SPACING.sm,
   },
   placeholderText: {
     fontSize: FONT_SIZES.sm,
@@ -429,10 +433,10 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.xs,
   },
   soldBadgeText: {
-    color: COLORS.textInverse,
+    color: COLORS.text,
     fontSize: FONT_SIZES.xxs,
-    fontWeight: FONT_WEIGHTS.heavy,
-    letterSpacing: 0.5,
+    fontWeight: FONT_WEIGHTS.bold,
+    letterSpacing: 1,
   },
   cardContent: {
     padding: SPACING.lg,
@@ -449,42 +453,50 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.xl,
     fontWeight: FONT_WEIGHTS.bold,
     color: COLORS.priceGreen,
-    marginBottom: SPACING.xs,
+    marginBottom: SPACING.sm,
   },
   itemPriceSold: {
     color: COLORS.sold,
     textDecorationLine: 'line-through',
   },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+  },
   itemLocation: {
     fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
-    marginBottom: SPACING.md,
   },
 
   // Item Actions
   itemActions: {
     flexDirection: 'row',
     gap: SPACING.sm,
-    marginTop: SPACING.md,
+    marginTop: SPACING.lg,
   },
   editBtn: {
     flex: 1,
     paddingVertical: SPACING.md,
-    borderRadius: RADIUS.md,
-    backgroundColor: COLORS.primary,
+    borderRadius: RADIUS.sm,
+    backgroundColor: COLORS.surfaceElevated,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   editBtnText: {
-    color: COLORS.textInverse,
+    color: COLORS.text,
     fontSize: FONT_SIZES.sm,
     fontWeight: FONT_WEIGHTS.semibold,
   },
   soldBtn: {
     flex: 1,
     paddingVertical: SPACING.md,
-    borderRadius: RADIUS.md,
-    backgroundColor: COLORS.backgroundSecondary,
+    borderRadius: RADIUS.sm,
+    backgroundColor: COLORS.surfaceElevated,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   soldBtnText: {
     color: COLORS.text,
@@ -494,7 +506,7 @@ const styles = StyleSheet.create({
   deleteBtn: {
     flex: 1,
     paddingVertical: SPACING.md,
-    borderRadius: RADIUS.md,
+    borderRadius: RADIUS.sm,
     backgroundColor: COLORS.errorLight,
     alignItems: 'center',
   },
@@ -506,30 +518,35 @@ const styles = StyleSheet.create({
 
   // Edit Form
   changeImageBtn: {
-    backgroundColor: COLORS.primaryMuted,
-    paddingVertical: SPACING.md,
-    borderRadius: RADIUS.md,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.surfaceElevated,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.sm,
     marginBottom: SPACING.lg,
+    gap: SPACING.sm,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   changeImageBtnText: {
-    color: COLORS.primary,
+    color: COLORS.text,
     fontSize: FONT_SIZES.sm,
-    fontWeight: FONT_WEIGHTS.semibold,
+    fontWeight: FONT_WEIGHTS.medium,
   },
   inputGroup: {
     marginBottom: SPACING.md,
   },
   inputLabel: {
     fontSize: FONT_SIZES.xs,
-    fontWeight: FONT_WEIGHTS.semibold,
+    fontWeight: FONT_WEIGHTS.medium,
     color: COLORS.textSecondary,
     marginBottom: SPACING.xs,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 1,
   },
   input: {
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.backgroundSecondary,
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: RADIUS.sm,
@@ -552,9 +569,11 @@ const styles = StyleSheet.create({
   cancelBtn: {
     flex: 1,
     paddingVertical: SPACING.md,
-    borderRadius: RADIUS.md,
-    backgroundColor: COLORS.backgroundSecondary,
+    borderRadius: RADIUS.sm,
+    backgroundColor: COLORS.surfaceElevated,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   cancelBtnText: {
     color: COLORS.text,
@@ -564,7 +583,7 @@ const styles = StyleSheet.create({
   saveBtn: {
     flex: 2,
     paddingVertical: SPACING.md,
-    borderRadius: RADIUS.md,
+    borderRadius: RADIUS.sm,
     backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',

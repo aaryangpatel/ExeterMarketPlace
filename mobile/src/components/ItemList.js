@@ -1,11 +1,12 @@
 /**
- * ItemList - Premium marketplace feed layout
- * Features smooth scrolling, pull-to-refresh, and elegant empty states
+ * ItemList - Premium dark marketplace feed
+ * Clean, formal design without emojis
  */
 import React from 'react';
 import { FlatList, View, Text, StyleSheet, RefreshControl } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import ItemCard from './ItemCard';
-import { COLORS, SPACING, FONT_SIZES, FONT_WEIGHTS, RADIUS } from '../theme/constants';
+import { COLORS, SPACING, FONT_SIZES, FONT_WEIGHTS } from '../theme/constants';
 
 export default function ItemList({
   items,
@@ -16,15 +17,15 @@ export default function ItemList({
   ListHeaderComponent,
   onRefresh,
   refreshing = false,
-  emptyTitle = 'No items yet',
-  emptySubtitle = 'Be the first to post something!',
+  emptyTitle = 'No Items Yet',
+  emptySubtitle = 'Be the first to post something',
 }) {
   const list = items ?? [];
 
   const ListEmpty = () => (
     <View style={styles.emptyContainer}>
       <View style={styles.emptyIconContainer}>
-        <Text style={styles.emptyIcon}>&#x1F4E6;</Text>
+        <Ionicons name="cube-outline" size={32} color={COLORS.textTertiary} />
       </View>
       <Text style={styles.emptyTitle}>{emptyTitle}</Text>
       <Text style={styles.emptySubtitle}>{emptySubtitle}</Text>
@@ -53,8 +54,8 @@ export default function ItemList({
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={COLORS.primary}
-            colors={[COLORS.primary]}
+            tintColor={COLORS.text}
+            colors={[COLORS.text]}
           />
         ) : undefined
       }
@@ -83,16 +84,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.xxl,
   },
   emptyIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: COLORS.primaryMuted,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: COLORS.surfaceElevated,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: SPACING.xl,
-  },
-  emptyIcon: {
-    fontSize: 36,
   },
   emptyTitle: {
     fontSize: FONT_SIZES.xl,
@@ -106,5 +104,6 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     textAlign: 'center',
     lineHeight: FONT_SIZES.md * 1.5,
+    maxWidth: 280,
   },
 });
