@@ -28,9 +28,9 @@ export default function ItemCard({ item, onPress, onMessagePress, isFavorite, on
     >
       {/* Image Container */}
       <View style={styles.imageContainer}>
-        {item.imageBase64 ? (
+        {(item.imagesBase64?.[0] ?? item.imageBase64) ? (
           <Image
-            source={{ uri: item.imageBase64 }}
+            source={{ uri: item.imagesBase64?.[0] ?? item.imageBase64 }}
             style={styles.image}
             contentFit="cover"
             recyclingKey={item.id}

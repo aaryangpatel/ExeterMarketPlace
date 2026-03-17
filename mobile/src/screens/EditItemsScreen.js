@@ -139,6 +139,7 @@ export default function EditItemsScreen({ route, navigation }) {
       }
     }
     handleInputChange(id, 'imageBase64', base64);
+    handleInputChange(id, 'imagesBase64', [base64]);
   };
 
   const renderItem = ({ item }) => {
@@ -150,9 +151,9 @@ export default function EditItemsScreen({ route, navigation }) {
       <View style={styles.card}>
         {/* Image */}
         <View style={styles.imageContainer}>
-          {item.imageBase64 ? (
+          {(editForm[item.id]?.imageBase64 ?? item.imagesBase64?.[0] ?? item.imageBase64) ? (
             <ExpoImage 
-              source={{ uri: editForm[item.id]?.imageBase64 || item.imageBase64 }} 
+              source={{ uri: editForm[item.id]?.imageBase64 ?? item.imagesBase64?.[0] ?? item.imageBase64 }} 
               style={styles.image} 
               contentFit="cover" 
             />

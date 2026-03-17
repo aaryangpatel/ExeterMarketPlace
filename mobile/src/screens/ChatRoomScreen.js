@@ -174,7 +174,7 @@ export default function ChatRoomScreen({ route, navigation }) {
     >
       {/* Item Context Bar */}
       <View style={styles.contextBar}>
-        <Text style={styles.contextText}>Regarding: {itemTitle}</Text>
+        <Text style={styles.contextText}>Regarding: {itemTitle ?? 'Item'}</Text>
       </View>
 
       {/* Messages */}

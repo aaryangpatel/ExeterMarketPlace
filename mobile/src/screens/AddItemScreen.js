@@ -41,7 +41,7 @@ export default function AddItemScreen({ navigation }) {
   if (!user) return null;
 
   const [step, setStep] = useState(1);
-  const [imageUri, setImageUri] = useState(null);
+  const [imageUris, setImageUris] = useState([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
@@ -50,24 +50,38 @@ export default function AddItemScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
 
-  const pickImage = async () => {
+  const pickImages = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
+      allowsMultipleSelection: true,
+      quality: 0.8,
+      selectionLimit: 10,
+    });
+    if (!result.canceled && result.assets?.length) {
+      setImageUris((prev) => [...prev, ...result.assets.map((a) => a.uri)].slice(0, 10));
+    }
+  };
+
+  const takePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Camera Required', 'Please allow camera access to take a photo.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
       quality: 0.8,
     });
-    if (!result.canceled) {
-      setImageUri(result.assets[0].uri);
+    if (!result.canceled && result.assets?.[0]) {
+      setImageUris((prev) => [...prev, result.assets[0].uri].slice(0, 10));
     }
+  };
+
+  const removeImage = (index) => {
+    setImageUris((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleNext = () => {
     if (step === 1) {
-      if (!imageUri) {
-        Alert.alert('Photo Required', 'Please add a photo of your item to continue.');
-        return;
-      }
       setStep(2);
     } else if (step === 2) {
       if (!title.trim()) {
@@ -82,12 +96,12 @@ export default function AddItemScreen({ navigation }) {
     }
   };
 
-  const fetchImageAsBase64 = async () => {
-    if (!imageUri) return null;
-    if (imageUri.startsWith('data:')) return imageUri;
+  const uriToBase64 = async (uri) => {
+    if (!uri) return null;
+    if (uri.startsWith('data:')) return uri;
 
     if (Platform.OS === 'web') {
-      const response = await fetch(imageUri);
+      const response = await fetch(uri);
       const blob = await response.blob();
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -98,8 +112,18 @@ export default function AddItemScreen({ navigation }) {
     }
 
     const encoding = FileSystem.EncodingType?.Base64 ?? 'base64';
-    const base64 = await FileSystem.readAsStringAsync(imageUri, { encoding });
+    const base64 = await FileSystem.readAsStringAsync(uri, { encoding });
     return `data:image/jpeg;base64,${base64}`;
+  };
+
+  const fetchImagesAsBase64 = async () => {
+    if (!imageUris?.length) return [];
+    const results = [];
+    for (const uri of imageUris) {
+      const b64 = await uriToBase64(uri);
+      if (b64) results.push(b64);
+    }
+    return results;
   };
 
   const handleSubmit = async () => {
@@ -110,20 +134,22 @@ export default function AddItemScreen({ navigation }) {
     
     setLoading(true);
     try {
-      const base64 = await fetchImageAsBase64();
-      await addDoc(collection(firestore, 'items'), {
+      const imagesBase64 = await fetchImagesAsBase64();
+      const payload = {
         title: title.trim(),
         description: description.trim(),
         price: price.trim() || 'Free',
         location: location.trim() || '',
         contactInfo: user?.email ?? '',
-        imageBase64: base64,
+        imagesBase64,
+        imageBase64: imagesBase64[0] ?? null,
         owner: user?.displayName ?? 'Anonymous',
         ownerEmail: user?.email ?? '',
         category: category || 'Other',
         status: 'available',
         timestamp: serverTimestamp(),
-      });
+      };
+      await addDoc(collection(firestore, 'items'), payload);
       navigation.goBack();
     } catch (err) {
       Alert.alert('Error', 'Failed to post item. Please try again.');
@@ -166,43 +192,62 @@ export default function AddItemScreen({ navigation }) {
       <View style={styles.stepContent}>
         {step === 1 && (
           <View>
-            <Text style={styles.stepTitle}>Add a Photo</Text>
+            <Text style={styles.stepTitle}>Add Photos</Text>
             <Text style={styles.stepSubtitle}>
-              A good photo helps your item sell faster
+              Photos help your item sell faster (optional)
             </Text>
-            
-            <TouchableOpacity 
-              style={styles.imageUpload} 
-              onPress={pickImage}
-              activeOpacity={0.8}
-            >
-              {imageUri ? (
-                <Image 
-                  source={{ uri: imageUri }} 
-                  style={styles.previewImage}
-                  contentFit="cover"
-                />
-              ) : (
-                <View style={styles.uploadPlaceholder}>
-                  <View style={styles.uploadIcon}>
-                    <Ionicons name="camera-outline" size={32} color={COLORS.text} />
+
+            {imageUris.length > 0 && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.thumbnailsScroll}
+                contentContainerStyle={styles.thumbnailsContent}
+              >
+                {imageUris.map((uri, index) => (
+                  <View key={index} style={styles.thumbnailWrapper}>
+                    <Image
+                      source={{ uri }}
+                      style={styles.thumbnail}
+                      contentFit="cover"
+                    />
+                    <TouchableOpacity
+                      style={styles.removeThumbnail}
+                      onPress={() => removeImage(index)}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="close-circle" size={24} color={COLORS.error} />
+                    </TouchableOpacity>
                   </View>
-                  <Text style={styles.uploadText}>Tap to Add Photo</Text>
-                  <Text style={styles.uploadHint}>JPG, PNG up to 10MB</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-            
-            {imageUri && (
-              <TouchableOpacity 
-                style={styles.changePhotoBtn}
-                onPress={pickImage}
+                ))}
+              </ScrollView>
+            )}
+
+            <View style={styles.photoActions}>
+              <TouchableOpacity
+                style={styles.photoActionBtn}
+                onPress={pickImages}
                 activeOpacity={0.8}
               >
-                <Ionicons name="refresh-outline" size={18} color={COLORS.text} />
-                <Text style={styles.changePhotoBtnText}>Change Photo</Text>
+                <View style={styles.photoActionIcon}>
+                  <Ionicons name="images-outline" size={24} color={COLORS.text} />
+                </View>
+                <Text style={styles.photoActionText}>Gallery</Text>
               </TouchableOpacity>
-            )}
+              <TouchableOpacity
+                style={styles.photoActionBtn}
+                onPress={takePhoto}
+                activeOpacity={0.8}
+              >
+                <View style={styles.photoActionIcon}>
+                  <Ionicons name="camera-outline" size={24} color={COLORS.text} />
+                </View>
+                <Text style={styles.photoActionText}>Camera</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.uploadHint}>
+              Up to 10 photos. Tap Gallery or Camera to add.
+            </Text>
           </View>
         )}
 
@@ -322,6 +367,15 @@ export default function AddItemScreen({ navigation }) {
             <Text style={styles.backBtnText}>Back</Text>
           </TouchableOpacity>
         )}
+        {step === 1 && (
+          <TouchableOpacity
+            style={styles.skipBtn}
+            onPress={() => setStep(2)}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.skipBtnText}>Skip</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           style={[styles.nextBtn, loading && styles.nextBtnDisabled]}
           onPress={step === 3 ? handleSubmit : handleNext}
@@ -423,53 +477,67 @@ const styles = StyleSheet.create({
   },
 
   // Image Upload
-  imageUpload: {
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.lg,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderStyle: 'dashed',
-    overflow: 'hidden',
-  },
-  uploadPlaceholder: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: SPACING.huge,
-  },
-  uploadIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: COLORS.surfaceElevated,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: SPACING.md,
-  },
-  uploadText: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: FONT_WEIGHTS.semibold,
-    color: COLORS.text,
-    marginBottom: SPACING.xs,
-  },
   uploadHint: {
     fontSize: FONT_SIZES.sm,
     color: COLORS.textTertiary,
+    marginTop: SPACING.sm,
   },
-  previewImage: {
-    width: '100%',
-    height: 240,
+  thumbnailsScroll: {
+    marginBottom: SPACING.lg,
   },
-  changePhotoBtn: {
+  thumbnailsContent: {
+    gap: SPACING.md,
+    paddingVertical: SPACING.sm,
+  },
+  thumbnailWrapper: {
+    position: 'relative',
+  },
+  thumbnail: {
+    width: 100,
+    height: 100,
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.surfaceElevated,
+  },
+  removeThumbnail: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+  },
+  photoActions: {
     flexDirection: 'row',
+    gap: SPACING.lg,
+    marginTop: SPACING.md,
+  },
+  photoActionBtn: {
+    flex: 1,
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingVertical: SPACING.lg,
+    alignItems: 'center',
+  },
+  photoActionIcon: {
+    marginBottom: SPACING.sm,
+  },
+  photoActionText: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: FONT_WEIGHTS.semibold,
+    color: COLORS.text,
+  },
+  skipBtn: {
+    flex: 1,
+    paddingVertical: SPACING.lg,
+    borderRadius: RADIUS.sm,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: SPACING.md,
-    marginTop: SPACING.md,
-    gap: SPACING.sm,
   },
-  changePhotoBtnText: {
+  skipBtnText: {
     fontSize: FONT_SIZES.md,
-    fontWeight: FONT_WEIGHTS.medium,
+    fontWeight: FONT_WEIGHTS.semibold,
     color: COLORS.text,
   },
 

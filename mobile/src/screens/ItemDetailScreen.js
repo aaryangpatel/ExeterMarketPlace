@@ -2,7 +2,7 @@
  * ItemDetailScreen - Premium dark item detail
  * Clean, formal design without emojis
  */
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,8 @@ import {
   StyleSheet,
   Alert,
   Platform,
+  FlatList,
+  Dimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,6 +26,14 @@ export default function ItemDetailScreen({ route, navigation }) {
   const { has, toggle } = useWatchlist();
 
   if (!item) return null;
+
+  const images = item.imagesBase64?.length
+    ? item.imagesBase64
+    : item.imageBase64
+      ? [item.imageBase64]
+      : [];
+  const [imageIndex, setImageIndex] = useState(0);
+  const screenWidth = Dimensions.get('window').width;
 
   const isFav = has(item.id);
   const isSold = item.status === 'sold';
@@ -66,14 +76,50 @@ export default function ItemDetailScreen({ route, navigation }) {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Image */}
+        {/* Image(s) */}
         <View style={styles.imageContainer}>
-          {item.imageBase64 ? (
-            <Image
-              source={{ uri: item.imageBase64 }}
-              style={styles.image}
-              contentFit="cover"
-            />
+          {images.length > 0 ? (
+            <>
+              {images.length === 1 ? (
+                <Image
+                  source={{ uri: images[0] }}
+                  style={styles.image}
+                  contentFit="cover"
+                />
+              ) : (
+                <>
+                  <FlatList
+                    data={images}
+                    horizontal
+                    pagingEnabled
+                    showsHorizontalScrollIndicator={false}
+                    onMomentumScrollEnd={(e) => {
+                      const idx = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
+                      setImageIndex(idx);
+                    }}
+                    keyExtractor={(_, i) => String(i)}
+                    renderItem={({ item: uri }) => (
+                      <Image
+                        source={{ uri }}
+                        style={[styles.image, { width: screenWidth }]}
+                        contentFit="cover"
+                      />
+                    )}
+                  />
+                  <View style={styles.imageDots}>
+                    {images.map((_, i) => (
+                      <View
+                        key={i}
+                        style={[
+                          styles.imageDot,
+                          i === imageIndex && styles.imageDotActive,
+                        ]}
+                      />
+                    ))}
+                  </View>
+                </>
+              )}
+            </>
           ) : (
             <View style={styles.imagePlaceholder}>
               <Ionicons name="image-outline" size={48} color={COLORS.textTertiary} />
@@ -204,6 +250,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: SPACING.md,
+  },
+  imageDots: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: SPACING.xs,
+    paddingVertical: SPACING.md,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
+  imageDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.textTertiary,
+    opacity: 0.6,
+  },
+  imageDotActive: {
+    backgroundColor: COLORS.surface,
+    opacity: 1,
   },
   placeholderText: {
     fontSize: FONT_SIZES.md,
