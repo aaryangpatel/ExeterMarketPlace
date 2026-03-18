@@ -110,21 +110,27 @@ export default function EditItemsScreen({ route, navigation }) {
   };
 
   const handleChangeImage = async (id) => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Required', 'Please allow access to your photos to change the image.');
+      return;
+    }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [4, 3],
       quality: 0.8,
+      base64: true,
     });
-    
+
     if (result.canceled) return;
-    
-    const uri = result.assets[0].uri;
-    let base64 = uri;
-    
-    if (!uri.startsWith('data:')) {
+
+    const asset = result.assets[0];
+    let base64 = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+
+    if (!base64?.startsWith('data:')) {
       if (Platform.OS === 'web') {
-        const res = await fetch(uri);
+        const res = await fetch(base64);
         const blob = await res.blob();
         base64 = await new Promise((resolve, reject) => {
           const r = new FileReader();
@@ -132,9 +138,16 @@ export default function EditItemsScreen({ route, navigation }) {
           r.onerror = reject;
           r.readAsDataURL(blob);
         });
+      } else if (base64?.startsWith('content://') && Platform.OS === 'android') {
+        const tempPath = `${FileSystem.cacheDirectory}temp_edit_${Date.now()}.jpg`;
+        await FileSystem.copyAsync({ from: base64, to: tempPath });
+        const enc = FileSystem.EncodingType?.Base64 ?? 'base64';
+        const b = await FileSystem.readAsStringAsync(tempPath, { encoding: enc });
+        await FileSystem.deleteAsync(tempPath, { idempotent: true });
+        base64 = `data:image/jpeg;base64,${b}`;
       } else {
         const enc = FileSystem.EncodingType?.Base64 ?? 'base64';
-        const b = await FileSystem.readAsStringAsync(uri, { encoding: enc });
+        const b = await FileSystem.readAsStringAsync(base64, { encoding: enc });
         base64 = `data:image/jpeg;base64,${b}`;
       }
     }

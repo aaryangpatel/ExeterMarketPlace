@@ -51,14 +51,25 @@ export default function AddItemScreen({ navigation }) {
   const [focusedField, setFocusedField] = useState(null);
 
   const pickImages = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Required', 'Please allow access to your photos to add images.');
+      return;
+    }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsMultipleSelection: true,
       quality: 0.8,
       selectionLimit: 10,
+      base64: true,
     });
     if (!result.canceled && result.assets?.length) {
-      setImageUris((prev) => [...prev, ...result.assets.map((a) => a.uri)].slice(0, 10));
+      const newImages = result.assets
+        .map((a) => (a.base64 ? `data:image/jpeg;base64,${a.base64}` : a.uri))
+        .filter(Boolean);
+      if (newImages.length) {
+        setImageUris((prev) => [...prev, ...newImages].slice(0, 10));
+      }
     }
   };
 
@@ -70,9 +81,14 @@ export default function AddItemScreen({ navigation }) {
     }
     const result = await ImagePicker.launchCameraAsync({
       quality: 0.8,
+      base64: true,
     });
     if (!result.canceled && result.assets?.[0]) {
-      setImageUris((prev) => [...prev, result.assets[0].uri].slice(0, 10));
+      const asset = result.assets[0];
+      const dataUri = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+      if (dataUri) {
+        setImageUris((prev) => [...prev, dataUri].slice(0, 10));
+      }
     }
   };
 
@@ -109,6 +125,15 @@ export default function AddItemScreen({ navigation }) {
         reader.onerror = reject;
         reader.readAsDataURL(blob);
       });
+    }
+
+    if (uri.startsWith('content://') && Platform.OS === 'android') {
+      const tempPath = `${FileSystem.cacheDirectory}temp_img_${Date.now()}.jpg`;
+      await FileSystem.copyAsync({ from: uri, to: tempPath });
+      const encoding = FileSystem.EncodingType?.Base64 ?? 'base64';
+      const base64 = await FileSystem.readAsStringAsync(tempPath, { encoding });
+      await FileSystem.deleteAsync(tempPath, { idempotent: true });
+      return `data:image/jpeg;base64,${base64}`;
     }
 
     const encoding = FileSystem.EncodingType?.Base64 ?? 'base64';

@@ -35,7 +35,14 @@
           "sounds": []
         }
       ],
-      "expo-image"
+      "expo-image",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Exeter Marketplace to access your photos to add images to listings.",
+          "cameraPermission": "Allow Exeter Marketplace to use your camera to take photos of items."
+        }
+      ]
     ],
     "extra": {}
   }
